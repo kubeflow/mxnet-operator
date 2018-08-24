@@ -1,2 +1,5 @@
 approvers:
-  suleisl2000
+  - suleisl2000
+  - jlewi
+reviewers:
+  - jzp1025
