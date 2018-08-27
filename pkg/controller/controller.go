@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	controllerName = "kubeflow"
+	controllerName = "mxnet-operator"
 )
 
 var (
