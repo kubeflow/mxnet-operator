@@ -76,7 +76,7 @@ The output should include `mxjobs.kubeflow.org`
 ```
 NAME                                           AGE
 ...
-mxjobs.kubeflow.org                       4d
+mxjobs.kubeflow.org                            4d
 ...
 ```
 
