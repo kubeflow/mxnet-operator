@@ -36,8 +36,8 @@ import (
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/kubeflow/v1alpha2"
-	"github.com/kubeflow/mxnet-operator/pkg/controller.v2/jobcontroller"
-	mxlogger "github.com/kubeflow/mxnet-operator/pkg/logger"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -297,7 +297,8 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	mxjobNeedsSync := tc.satisfiedExpectations(mxjob)
 
 	if tc.Config.EnableGangScheduling {
-		_, err := tc.SyncPdb(mxjob)
+		minAvailableReplicas := getTotalReplicas(mxjob)
+		_, err := tc.SyncPdb(mxjob, minAvailableReplicas)
 		if err != nil {
 			logger.Warnf("Sync pdb %v: %v", mxjob.Name, err)
 		}
@@ -318,8 +319,8 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	return true, err
 }
 
-func (tc *MXController) GetTotalReplicas(obj metav1.Object) int32 {
-	mxjob := obj.(*mxv1alpha2.MXJob)
+
+func getTotalReplicas(mxjob *mxv1alpha2.MXJob) int32 {
 	mxjobReplicas := int32(0)
 	for _, r := range mxjob.Spec.MXReplicaSpecs {
 		mxjobReplicas += *r.Replicas

@@ -87,10 +87,10 @@ func setTypeNameToCamelCase(mxJob *MXJob, typ MXReplicaType) {
 
 // SetDefaults_MXJob sets any unspecified values to defaults.
 func SetDefaults_MXJob(mxjob *MXJob) {
-	// Set default cleanpod policy to Running.
+	// Set default cleanpod policy to All.
 	if mxjob.Spec.CleanPodPolicy == nil {
-		running := CleanPodPolicyRunning
-		mxjob.Spec.CleanPodPolicy = &running
+		all := CleanPodPolicyAll
+		mxjob.Spec.CleanPodPolicy = &all
 	}
 
 	// Update the key of MXReplicaSpecs to camel case.

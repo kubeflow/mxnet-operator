@@ -57,7 +57,7 @@ func newMXController(
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientSet, resyncPeriod())
 	mxJobInformerFactory := mxjobinformers.NewSharedInformerFactory(mxJobClientSet, resyncPeriod())
 
-	mxJobInformer := NewUnstructuredMXJobInformer(config)
+	mxJobInformer := NewUnstructuredMXJobInformer(config, metav1.NamespaceAll)
 
 	ctr := NewMXController(mxJobInformer, kubeClientSet, mxJobClientSet, kubeInformerFactory, mxJobInformerFactory, option)
 	ctr.PodControl = &controller.FakePodControl{}

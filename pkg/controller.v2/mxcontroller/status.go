@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
-	mxlogger "github.com/kubeflow/mxnet-operator/pkg/logger"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (

@@ -28,9 +28,9 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
-	"github.com/kubeflow/mxnet-operator/pkg/controller.v2/jobcontroller"
-	mxlogger "github.com/kubeflow/mxnet-operator/pkg/logger"
-	train_util "github.com/kubeflow/mxnet-operator/pkg/util/train"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
+	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
 const (
@@ -158,6 +158,7 @@ func (tc *MXController) createNewPod(mxjob *mxv1alpha2.MXJob, rt, index string, 
 		podTemplate.Labels[key] = value
 	}
 
+        setSchedulerName(podTemplate, mxjob)
 	if err := setClusterSpec(podTemplate, mxjob, rt, index); err != nil {
 		return err
 	}
@@ -185,6 +186,10 @@ func (tc *MXController) createNewPod(mxjob *mxv1alpha2.MXJob, rt, index string, 
 		return err
 	}
 	return nil
+}
+
+func setSchedulerName(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob) {
+	podTemplateSpec.Spec.SchedulerName = mxjob.Spec.SchedulerName
 }
 
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob, rt, index string) error {

@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
-	mxlogger "github.com/kubeflow/mxnet-operator/pkg/logger"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (
@@ -85,7 +85,7 @@ func (tc *MXController) deletePodsAndServices(mxJob *mxv1alpha2.MXJob, pods []*v
 	}
 
 	for _, pod := range pods {
-		if *mxJob.Spec.CleanPodPolicy == mxv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning && pod.Status.Phase != v1.PodSucceeded{
+		if *mxJob.Spec.CleanPodPolicy == mxv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning{
 			continue
 		}
 

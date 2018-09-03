@@ -183,6 +183,17 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/kubeflow/tf-operator"
+  packages = [
+    "pkg/control",
+    "pkg/controller.v2/jobcontroller",
+    "pkg/logger",
+    "pkg/util/train"
+  ]
+  revision = "ed91105e7aa2e6f00c10c70ec99d369cc0254076"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mailru/easyjson"
   packages = [
     "buffer",
@@ -730,6 +741,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b678846bd7e02d20a2515467df588b1ee3a0c563d1636e948e33fa83ceca93db"
+  inputs-digest = "71ad773611d0e80bb934182c2a0f55551e44da666f1d678aa375f8fefea53895"
   solver-name = "gps-cdcl"
   solver-version = 1

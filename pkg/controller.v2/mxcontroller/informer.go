@@ -16,7 +16,7 @@ import (
 	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/validation"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
-	mxlogger "github.com/kubeflow/mxnet-operator/pkg/logger"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/mxnet-operator/pkg/util/unstructured"
 )
 
@@ -31,7 +31,7 @@ var (
 	errFailedMarshal = fmt.Errorf("Failed to marshal the object to MXJob")
 )
 
-func NewUnstructuredMXJobInformer(restConfig *restclientset.Config) mxjobinformersv1alpha2.MXJobInformer {
+func NewUnstructuredMXJobInformer(restConfig *restclientset.Config, namespace string) mxjobinformersv1alpha2.MXJobInformer {
 	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
 	dclient, err := dynClientPool.ClientForGroupVersionKind(mxv1alpha2.SchemeGroupVersionKind)
 	if err != nil {
@@ -47,7 +47,7 @@ func NewUnstructuredMXJobInformer(restConfig *restclientset.Config) mxjobinforme
 	informer := unstructured.NewMXJobInformer(
 		resource,
 		dclient,
-		metav1.NamespaceAll,
+		namespace,
 		resyncPeriod,
 		cache.Indexers{},
 	)

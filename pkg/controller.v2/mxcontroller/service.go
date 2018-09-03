@@ -28,8 +28,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
-	"github.com/kubeflow/mxnet-operator/pkg/controller.v2/jobcontroller"
-	mxlogger "github.com/kubeflow/mxnet-operator/pkg/logger"
+	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 // reconcileServices checks and updates services for each given MXReplicaSpec.

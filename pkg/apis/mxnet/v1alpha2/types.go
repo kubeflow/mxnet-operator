@@ -48,6 +48,9 @@ type MXJobSpec struct {
 	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
+	// SchedulerName specifies the name of scheduler which should handle the MXJob.
+	SchedulerName string `json:"schedulerName,omitempty"`
+
 	// TTLSecondsAfterFinished is the TTL to clean up mxnet-jobs (temporary
 	// before kubernetes adds the cleanup controller).
 	// It may take extra ReconcilePeriod seconds for the cleanup, since
