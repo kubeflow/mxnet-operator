@@ -35,7 +35,7 @@ import (
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
-	controller "github.com/kubeflow/mxnet-operator/pkg/controller.v2/mxcontroller"
+	controller "github.com/kubeflow/mxnet-operator/pkg/controller.v2/mxnet"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/mxnet-operator/pkg/version"
 )

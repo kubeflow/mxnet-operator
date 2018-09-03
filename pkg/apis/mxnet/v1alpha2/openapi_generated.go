@@ -182,7 +182,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Format:      "",
 							},
 						},
-						"ttlSecondsAfterFinishing": {
+						"schedulerName": {
+							SchemaProps: spec.SchemaProps{
+								Description: "SchedulerName specifies the name of scheduler which should handle the MXJob.",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"ttlSecondsAfterFinished": {
 							SchemaProps: spec.SchemaProps{
 								Description: "TTLSecondsAfterFinished is the TTL to clean up mxnet-jobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.",
 								Type:        []string{"integer"},

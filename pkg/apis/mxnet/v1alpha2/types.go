@@ -56,7 +56,7 @@ type MXJobSpec struct {
 	// It may take extra ReconcilePeriod seconds for the cleanup, since
 	// reconcile gets called periodically.
 	// Default to infinite.
-	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinishing,omitempty"`
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 
 	// MXReplicaSpecs is map of MXReplicaType and MXReplicaSpec
 	// specifies the MX replicas to run.
