@@ -21,7 +21,7 @@ package v1alpha1
 import (
 	time "time"
 
-	mxnet_v1alpha1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha1"
+	mxnetv1alpha1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha1"
 	versioned "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/internalinterfaces"
 	v1alpha1 "github.com/kubeflow/mxnet-operator/pkg/client/listers/kubeflow/v1alpha1"
@@ -55,7 +55,7 @@ func NewMXJobInformer(client versioned.Interface, namespace string, resyncPeriod
 				return client.KubeflowV1alpha1().MXJobs(namespace).Watch(options)
 			},
 		},
-		&mxnet_v1alpha1.MXJob{},
+		&mxnetv1alpha1.MXJob{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,7 +66,7 @@ func defaultMXJobInformer(client versioned.Interface, resyncPeriod time.Duration
 }
 
 func (f *mXJobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&mxnet_v1alpha1.MXJob{}, defaultMXJobInformer)
+	return f.factory.InformerFor(&mxnetv1alpha1.MXJob{}, defaultMXJobInformer)
 }
 
 func (f *mXJobInformer) Lister() v1alpha1.MXJobLister {
