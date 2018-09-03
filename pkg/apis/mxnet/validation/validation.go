@@ -19,6 +19,9 @@ import (
 
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha1"
 	"github.com/kubeflow/mxnet-operator/pkg/util"
+
+	log "github.com/sirupsen/logrus"
+	mxv2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
 )
 
 // ValidateMXJobSpec checks that the MXJobSpec is valid.
@@ -70,5 +73,34 @@ func ValidateMXJobSpec(c *mxv1.MXJobSpec) error {
 		return fmt.Errorf("Missing ReplicaSpec for chief: %v", c.TerminationPolicy.Chief.ReplicaName)
 	}
 
+	return nil
+}
+
+// ValidateAlphaTwoMXJobSpec checks that the v1alpha2.MXJobSpec is valid.
+func ValidateAlphaTwoMXJobSpec(c *mxv2.MXJobSpec) error {
+	if c.MXReplicaSpecs == nil {
+		return fmt.Errorf("MXJobSpec is NULL")
+	}
+	for rType, value := range c.MXReplicaSpecs {
+		if value == nil || len(value.Template.Spec.Containers) == 0 {
+			return fmt.Errorf("MXJobSpec is not valid")
+		}
+		//Make sure the image is defined in the container
+		numNamedMXNet := 0
+		for _, container := range value.Template.Spec.Containers {
+			if container.Image == "" {
+				log.Warn("Image is undefined in the container")
+				return fmt.Errorf("MXJobSpec is not valid")
+			}
+			if container.Name == mxv2.DefaultContainerName {
+				numNamedMXNet++
+			}
+		}
+		//Make sure there has at least one container named "mxnet"
+		if numNamedMXNet == 0 {
+			log.Warnf("There is no container named mxnet in %v", rType)
+			return fmt.Errorf("MXJobSpec is not valid")
+		}
+	}
 	return nil
 }

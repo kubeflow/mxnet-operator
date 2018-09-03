@@ -150,6 +150,9 @@ func (m *ServiceControllerRefManager) ReleaseService(service *v1.Service) error 
 			// match, which means the service is deleted and then recreated.
 			// In both cases, the error can be ignored.
 
+			// TODO: If the service has owner references, but none of them
+			// has the owner.UID, server will silently ignore the patch.
+			// Investigate why.
 			return nil
 		}
 	}

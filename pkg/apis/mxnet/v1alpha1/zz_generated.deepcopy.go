@@ -188,9 +188,7 @@ func (in *MXJobSpec) DeepCopyInto(out *MXJobSpec) {
 		in, out := &in.ReplicaSpecs, &out.ReplicaSpecs
 		*out = make([]*MXReplicaSpec, len(*in))
 		for i := range *in {
-			if (*in)[i] == nil {
-				(*out)[i] = nil
-			} else {
+			if (*in)[i] != nil {
 				in, out := &(*in)[i], &(*out)[i]
 				*out = new(MXReplicaSpec)
 				(*in).DeepCopyInto(*out)
@@ -222,9 +220,7 @@ func (in *MXJobStatus) DeepCopyInto(out *MXJobStatus) {
 		in, out := &in.ReplicaStatuses, &out.ReplicaStatuses
 		*out = make([]*MXReplicaStatus, len(*in))
 		for i := range *in {
-			if (*in)[i] == nil {
-				(*out)[i] = nil
-			} else {
+			if (*in)[i] != nil {
 				in, out := &(*in)[i], &(*out)[i]
 				*out = new(MXReplicaStatus)
 				(*in).DeepCopyInto(*out)
@@ -318,3 +314,4 @@ func (in *TerminationPolicySpec) DeepCopy() *TerminationPolicySpec {
 	in.DeepCopyInto(out)
 	return out
 }
+
