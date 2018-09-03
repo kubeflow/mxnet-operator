@@ -188,6 +188,7 @@
     "pkg/control",
     "pkg/controller.v2/jobcontroller",
     "pkg/logger",
+    "pkg/util/signals",
     "pkg/util/train"
   ]
   revision = "ed91105e7aa2e6f00c10c70ec99d369cc0254076"
@@ -741,6 +742,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "71ad773611d0e80bb934182c2a0f55551e44da666f1d678aa375f8fefea53895"
+  inputs-digest = "31ab8d94639ebdc66bf619c4be2cf5b54eb6520c9d709bf371541a392f10d17a"
   solver-name = "gps-cdcl"
   solver-version = 1
