@@ -219,9 +219,9 @@ func TestDeletePodsAndServices(t *testing.T) {
 
 			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
-			expectedPodDeletions: 6,
+			expectedPodDeletions: 7,
 		},/*
 		testCase{
 			description: "4 workers and 2 ps is running, policy is running",
@@ -380,13 +380,13 @@ func TestCleanupMXJob(t *testing.T) {
 		expectedDeleteFinished bool
 	}
 
-	ttlaf0 := int32(0)
-	ttl0 := &ttlaf0
-	ttlaf2s := int32(2)
-	ttl2s := &ttlaf2s
+	//ttlaf0 := int32(0)
+	//ttl0 := &ttlaf0
+	//ttlaf2s := int32(2)
+	//ttl2s := &ttlaf2s
 	testCases := []testCase{
 		testCase{
-			description: "1 scheduler , 4 workers and 2 ps is running, TTLSecondsAfterFinished unset",
+			description: "1 scheduler , 4 workers and 2 server is running, TTLSecondsAfterFinished unset",
 			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, nil),
 
 		        pendingSchedulerPods:  0,
@@ -406,7 +406,7 @@ func TestCleanupMXJob(t *testing.T) {
 
 			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
 			expectedDeleteFinished: false,
 		},/*

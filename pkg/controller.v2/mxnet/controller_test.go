@@ -68,8 +68,8 @@ func newMXController(
 func TestNormalPath(t *testing.T) {
 	testCases := map[string]struct {
 		scheduler int
-		server int
                 worker int
+		server int
 
 		// pod setup
 		ControllerError error
@@ -117,32 +117,21 @@ func TestNormalPath(t *testing.T) {
 		// There are some cases that should not check start time since the field should be set in the previous sync loop.
 		needCheckStartTime bool
 	}{
-		/*"Local MXJob is created": {
-			1, 0,
+		"Distributed TFJob (1 scheduler, 4 workers, 2 servers) is created": {
+			1, 4, 2,
 			nil, true,
+			0, 0, 0, 0,			
 			0, 0, 0, 0,
 			0, 0, 0, 0,
-			0, 0,
-			1, 0, 1,
 			0, 0, 0,
-			0, 0, 0,
-			// We can not check if it is created since the condition is set in addTFJob.
-			nil, "",
-			false,
-		},
-		"Distributed TFJob (4 workers, 2 PS) is created": {
-			4, 2,
-			nil, true,
-			0, 0, 0, 0,
-			0, 0, 0, 0,
-			0, 0,
-			6, 0, 6,
+			7, 0, 7,
+			0, 0, 0,			
 			0, 0, 0,
 			0, 0, 0,
 			nil, "",
 			false,
 		},
-		"Distributed TFJob (4 workers, 2 PS) is created and all replicas are pending": {
+		/*"Distributed TFJob (4 workers, 2 PS) is created and all replicas are pending": {
 			4, 2,
 			nil, true,
 			4, 0, 0, 0,
@@ -202,21 +191,21 @@ func TestNormalPath(t *testing.T) {
 			nil, "",
 			false,
 		},
-                */
+               
 		"Distributed MXJob (4 workers, 2 Server, 1 Scheduler) is succeeded": {
-			1, 4, 2,
+			1, 2, 4,
 			nil, true,
-                        0, 1, 0, 0,
-			0, 0, 4, 0,
+                        0, 0, 1, 0,
 			0, 0, 2, 0,
-			1, 4, 2,
+			0, 0, 4, 0,
+			1, 2, 4,
 			0, 0, 0,
-                        1, 0, 0,
+                        0, 1, 0,
+			0, 2, 0,
 			0, 4, 0,
-			2, 0, 0,
 			&mxJobSucceeded, mxJobSucceededReason,
 			false,
-		},
+		}, */
 	}
 
 	for name, tc := range testCases {
@@ -249,7 +238,7 @@ func TestNormalPath(t *testing.T) {
 		}
 
 		// Run the test logic.
-		mxJob := testutil.NewMXJob(tc.worker, tc.ps)
+		mxJob := testutil.NewMXJobWithScheduler(tc.worker, tc.server)
 		unstructured, err := testutil.ConvertMXJobToUnstructured(mxJob)
 		if err != nil {
 			t.Errorf("Failed to convert the MXJob to Unstructured: %v", err)
@@ -427,7 +416,7 @@ func TestSyncPdb(t *testing.T) {
 				},
 				Spec: mxv1alpha2.MXJobSpec{
 					MXReplicaSpecs: map[mxv1alpha2.MXReplicaType]*mxv1alpha2.MXReplicaSpec{
-						mxv1alpha2.MxReplicaTypeWorker: &mxv1alpha2.MXReplicaSpec{
+						mxv1alpha2.MXReplicaTypeWorker: &mxv1alpha2.MXReplicaSpec{
 							Replicas: proto.Int32(1),
 						},
 					},
@@ -453,7 +442,7 @@ func TestSyncPdb(t *testing.T) {
 					MinAvailable: &minAvailable2,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							"mx_job_name": "test-sync-pdb",
+							"mxnet_job_name": "test-sync-pdb",
 						},
 					},
 				},
