@@ -115,7 +115,7 @@ func TestSetTypeNames(t *testing.T) {
 func TestSetDefaultMXJob(t *testing.T) {
 	customPortName := "customPort"
 	var customPort int32 = 1234
-	customRestartPolicy := RestartPolicyAlways
+	customRestartPolicy := RestartPolicyNever
 
 	testCases := map[string]struct {
 		original *MXJob
@@ -147,7 +147,7 @@ func TestSetDefaultMXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXJob(CleanPodPolicyRunning, customRestartPolicy, DefaultPortName, DefaultPort),
+			expected: expectedMXJob(CleanPodPolicyAll, customRestartPolicy, DefaultPortName, DefaultPort),
 		},
 		"set replicas with default restartpolicy": {
 			original: &MXJob{
@@ -174,7 +174,7 @@ func TestSetDefaultMXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXJob(CleanPodPolicyRunning, DefaultRestartPolicy, DefaultPortName, DefaultPort),
+			expected: expectedMXJob(CleanPodPolicyAll, DefaultRestartPolicy, DefaultPortName, DefaultPort),
 		},
 		"set replicas with default port": {
 			original: &MXJob{
@@ -197,7 +197,7 @@ func TestSetDefaultMXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXJob(CleanPodPolicyRunning, customRestartPolicy, "", 0),
+			expected: expectedMXJob(CleanPodPolicyAll, customRestartPolicy, "", 0),
 		},
 		"set replicas adding default port": {
 			original: &MXJob{
@@ -226,12 +226,12 @@ func TestSetDefaultMXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXJob(CleanPodPolicyRunning, customRestartPolicy, customPortName, customPort),
+			expected: expectedMXJob(CleanPodPolicyAll, customRestartPolicy, customPortName, customPort),
 		},
 		"set custom cleanpod policy": {
 			original: &MXJob{
 				Spec: MXJobSpec{
-					CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyAll),
+					CleanPodPolicy: cleanPodPolicyPointer(CleanPodPolicyRunning),
 					MXReplicaSpecs: map[MXReplicaType]*MXReplicaSpec{
 						MXReplicaTypeWorker: &MXReplicaSpec{
 							Replicas:      Int32(1),
@@ -256,7 +256,7 @@ func TestSetDefaultMXJob(t *testing.T) {
 					},
 				},
 			},
-			expected: expectedMXJob(CleanPodPolicyAll, customRestartPolicy, customPortName, customPort),
+			expected: expectedMXJob(CleanPodPolicyRunning, customRestartPolicy, customPortName, customPort),
 		},
 	}
 

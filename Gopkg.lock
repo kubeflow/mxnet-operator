@@ -246,6 +246,12 @@
   version = "v2.0.1"
 
 [[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/prometheus/client_golang"
   packages = ["prometheus"]
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
@@ -289,6 +295,12 @@
   packages = ["."]
   revision = "9a97c102cda95a86cec2345a6f09f55a939babf5"
   version = "v1.0.2"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
@@ -395,6 +407,7 @@
   branch = "release-1.9"
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -413,6 +426,7 @@
     "core/v1",
     "events/v1beta1",
     "extensions/v1beta1",
+    "imagepolicy/v1alpha1",
     "networking/v1",
     "policy/v1beta1",
     "rbac/v1",
@@ -653,6 +667,7 @@
     "util/integer",
     "util/jsonpath",
     "util/retry",
+    "util/testing",
     "util/workqueue"
   ]
   revision = "78700dec6369ba22221b72770783300f143df150"
@@ -709,8 +724,43 @@
   packages = [
     "pkg/api/legacyscheme",
     "pkg/api/service",
+    "pkg/api/testapi",
     "pkg/api/v1/pod",
+    "pkg/apis/admission",
+    "pkg/apis/admission/install",
+    "pkg/apis/admission/v1beta1",
+    "pkg/apis/admissionregistration",
+    "pkg/apis/admissionregistration/install",
+    "pkg/apis/admissionregistration/v1alpha1",
+    "pkg/apis/admissionregistration/v1beta1",
+    "pkg/apis/apps",
+    "pkg/apis/apps/install",
+    "pkg/apis/apps/v1",
+    "pkg/apis/apps/v1beta1",
+    "pkg/apis/apps/v1beta2",
+    "pkg/apis/authentication",
+    "pkg/apis/authentication/install",
+    "pkg/apis/authentication/v1",
+    "pkg/apis/authentication/v1beta1",
+    "pkg/apis/authorization",
+    "pkg/apis/authorization/install",
+    "pkg/apis/authorization/v1",
+    "pkg/apis/authorization/v1beta1",
     "pkg/apis/autoscaling",
+    "pkg/apis/autoscaling/install",
+    "pkg/apis/autoscaling/v1",
+    "pkg/apis/autoscaling/v2beta1",
+    "pkg/apis/batch",
+    "pkg/apis/batch/install",
+    "pkg/apis/batch/v1",
+    "pkg/apis/batch/v1beta1",
+    "pkg/apis/batch/v2alpha1",
+    "pkg/apis/certificates",
+    "pkg/apis/certificates/install",
+    "pkg/apis/certificates/v1beta1",
+    "pkg/apis/componentconfig",
+    "pkg/apis/componentconfig/install",
+    "pkg/apis/componentconfig/v1alpha1",
     "pkg/apis/core",
     "pkg/apis/core/helper",
     "pkg/apis/core/install",
@@ -718,13 +768,44 @@
     "pkg/apis/core/v1",
     "pkg/apis/core/v1/helper",
     "pkg/apis/core/validation",
+    "pkg/apis/events",
+    "pkg/apis/events/install",
+    "pkg/apis/events/v1beta1",
     "pkg/apis/extensions",
+    "pkg/apis/extensions/install",
+    "pkg/apis/extensions/v1beta1",
+    "pkg/apis/imagepolicy",
+    "pkg/apis/imagepolicy/install",
+    "pkg/apis/imagepolicy/v1alpha1",
     "pkg/apis/networking",
+    "pkg/apis/networking/install",
+    "pkg/apis/networking/v1",
+    "pkg/apis/policy",
+    "pkg/apis/policy/install",
+    "pkg/apis/policy/v1beta1",
+    "pkg/apis/rbac",
+    "pkg/apis/rbac/install",
+    "pkg/apis/rbac/v1",
+    "pkg/apis/rbac/v1alpha1",
+    "pkg/apis/rbac/v1beta1",
+    "pkg/apis/scheduling",
+    "pkg/apis/scheduling/install",
+    "pkg/apis/scheduling/v1alpha1",
+    "pkg/apis/settings",
+    "pkg/apis/settings/install",
+    "pkg/apis/settings/v1alpha1",
+    "pkg/apis/storage",
+    "pkg/apis/storage/install",
+    "pkg/apis/storage/v1",
+    "pkg/apis/storage/v1alpha1",
+    "pkg/apis/storage/v1beta1",
     "pkg/capabilities",
     "pkg/controller",
     "pkg/features",
     "pkg/fieldpath",
+    "pkg/kubelet/apis",
     "pkg/kubelet/types",
+    "pkg/master/ports",
     "pkg/security/apparmor",
     "pkg/serviceaccount",
     "pkg/util/file",
@@ -742,6 +823,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "31ab8d94639ebdc66bf619c4be2cf5b54eb6520c9d709bf371541a392f10d17a"
+  inputs-digest = "fe236271e97946cb1b85945c9d7f8d819fb82957f3b56134573f527426a8bff6"
   solver-name = "gps-cdcl"
   solver-version = 1

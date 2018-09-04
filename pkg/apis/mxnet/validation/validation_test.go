@@ -19,7 +19,6 @@ import (
 
 	mxv2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
 
-	"github.com/gogo/protobuf/proto"
 	"k8s.io/api/core/v1"
 )
 
@@ -65,6 +64,17 @@ func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
 									Image: "mxjob/mxnet:gpu",
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+		{
+			MXReplicaSpecs: map[mxv2.MXReplicaType]*mxv2.MXReplicaSpec{
+				mxv2.MXReplicaTypeScheduler: &mxv2.MXReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{},
 						},
 					},
 				},
