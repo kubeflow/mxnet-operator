@@ -1,8 +1,9 @@
 FROM golang:1.8.2
 
-RUN mkdir -p /opt/mlkube
-RUN mkdir -p /opt/mlkube/test
-COPY mxnet-operator /opt/mlkube
-RUN chmod a+x /opt/mlkube/mxnet-operator
+RUN mkdir -p /opt/kubeflow
+COPY mxnet-operator /opt/kubeflow
+RUN chmod a+x /opt/kubeflow/mxnet-operator
+COPY mxnet-operator.v2 /opt/kubeflow
+RUN chmod a+x /opt/kubeflow/mxnet-operator.v2
 
-CMD ["/opt/mlkube/mxnet-operator", "--alsologtostderr", "-v=1"]
+CMD ["/opt/kubeflow/mxnet-operator", "--alsologtostderr", "-v=1"]

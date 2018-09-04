@@ -17,7 +17,10 @@ package validation
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha1"
+	mxv2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
 	"github.com/kubeflow/mxnet-operator/pkg/util"
 )
 
@@ -70,5 +73,45 @@ func ValidateMXJobSpec(c *mxv1.MXJobSpec) error {
 		return fmt.Errorf("Missing ReplicaSpec for chief: %v", c.TerminationPolicy.Chief.ReplicaName)
 	}
 
+	return nil
+}
+
+// ValidateAlphaTwoMXJobSpec checks that the v1alpha2.MXJobSpec is valid.
+func ValidateAlphaTwoMXJobSpec(c *mxv2.MXJobSpec) error {
+	return validateAlphaTwoReplicaSpecs(c.MXReplicaSpecs)
+}
+
+func validateAlphaTwoReplicaSpecs(specs map[mxv2.MXReplicaType]*mxv2.MXReplicaSpec) error {
+	if specs == nil {
+		return fmt.Errorf("MXJobSpec is not valid")
+	}
+	foundScheduler := 0
+	for rType, value := range specs {
+		if value == nil || len(value.Template.Spec.Containers) == 0 {
+			return fmt.Errorf("MXJobSpec is not valid")
+		}
+		if mxv2.IsScheduler(rType) {
+			foundScheduler++
+		}
+		// Make sure the image is defined in the container.
+		numNamedMXNet := 0
+		for _, container := range value.Template.Spec.Containers {
+			if container.Image == "" {
+				log.Warn("Image is undefined in the container")
+				return fmt.Errorf("MXJobSpec is not valid")
+			}
+			if container.Name == mxv2.DefaultContainerName {
+				numNamedMXNet++
+			}
+		}
+		// Make sure there has at least one container named "mxnet".
+		if numNamedMXNet == 0 {
+			log.Warnf("There is no container named mxnet in %v", rType)
+			return fmt.Errorf("MXJobSpec is not valid")
+		}
+	}
+	if foundScheduler > 1 {
+		return fmt.Errorf("More than 1 scheduler found")
+	}
 	return nil
 }

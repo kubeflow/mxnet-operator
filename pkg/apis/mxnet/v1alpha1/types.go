@@ -63,6 +63,7 @@ type MXJobSpec struct {
 
 	// SchedulerName specifies the name of scheduler which should handle the MXJob
 	SchedulerName string `json:"schedulerName,omitempty"`
+
 }
 
 // CleanupPodPolicy defines all kinds of types of cleanPodPolicy.
