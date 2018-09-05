@@ -68,7 +68,7 @@ func newMXController(
 func TestNormalPath(t *testing.T) {
 	testCases := map[string]struct {
 		scheduler int
-                worker int
+		worker int
 		server int
 
 		// pod setup
