@@ -24,13 +24,29 @@ import (
 )
 
 func NewMXJobWithCleanPolicy(scheduler, worker, server int, policy mxv1alpha2.CleanPodPolicy) *mxv1alpha2.MXJob {
-	mxJob := NewMXJobWithScheduler(worker, server)
+	
+	var mxJob *mxv1alpha2.MXJob
+		
+	if scheduler > 0 {
+		mxJob = NewMXJobWithScheduler(worker, server)
+	} else {
+		mxJob = NewMXJob(worker, server)
+	}
+
 	mxJob.Spec.CleanPodPolicy = &policy
 	return mxJob
 }
 
 func NewMXJobWithCleanupJobDelay(scheduler, worker, server int, ttl *int32) *mxv1alpha2.MXJob {
-	mxJob := NewMXJobWithScheduler(worker, server)
+	
+	var mxJob *mxv1alpha2.MXJob
+		
+	if scheduler > 0 {
+		mxJob = NewMXJobWithScheduler(worker, server)
+	} else {
+		mxJob = NewMXJob(worker, server)
+	}
+
 	mxJob.Spec.TTLSecondsAfterFinished = ttl
 	policy := mxv1alpha2.CleanPodPolicyNone
 	mxJob.Spec.CleanPodPolicy = &policy

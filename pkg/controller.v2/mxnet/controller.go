@@ -48,7 +48,7 @@ const (
 	mxReplicaTypeLabel  = "mxnet-replica-type"
 	mxReplicaIndexLabel = "mxnet-replica-index"
 	labelGroupName      = "group_name"
-	labelMXJobName      = "mx_job_name"
+	labelMXJobName      = "mxnet_job_name"
 )
 
 var (

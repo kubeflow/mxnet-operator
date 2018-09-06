@@ -219,67 +219,85 @@ func TestDeletePodsAndServices(t *testing.T) {
 
 			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
-			expectedPodDeletions: 6,
-		},/*
+			expectedPodDeletions: 7,
+		},
 		testCase{
-			description: "4 workers and 2 ps is running, policy is running",
-			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyRunning),
+			description: "1 scheduler, 4 workers and 2 servers is running, policy is running",
+			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1alpha2.CleanPodPolicyRunning),
+
+		        pendingSchedulerPods:  0,
+		        activeSchedulerPods:   1,
+		        succeededSchedulerPods:0,
+		        failedSchedulerPods:   0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
 			succeededWorkerPods: 0,
 			failedWorkerPods:    0,
 
-			pendingPSPods:   0,
-			activePSPods:    2,
-			succeededPSPods: 0,
-			failedPSPods:    0,
+			pendingServerPods:   0,
+			activeServerPods:    2,
+			succeededServerPods: 0,
+			failedServerPods:    0,
 
+			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
-			expectedPodDeletions: 6,
+			expectedPodDeletions: 7,
 		},
 		testCase{
-			description: "4 workers and 2 ps is succeeded, policy is running",
-			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyRunning),
+			description: "1 scheduler, 4 workers and 2 servers is succeeded, policy is running",
+			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1alpha2.CleanPodPolicyRunning),
+
+		        pendingSchedulerPods:  0,
+		        activeSchedulerPods:   0,
+		        succeededSchedulerPods:1,
+		        failedSchedulerPods:   0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    0,
 			succeededWorkerPods: 4,
 			failedWorkerPods:    0,
 
-			pendingPSPods:   0,
-			activePSPods:    0,
-			succeededPSPods: 2,
-			failedPSPods:    0,
+			pendingServerPods:   0,
+			activeServerPods:    0,
+			succeededServerPods: 2,
+			failedServerPods:    0,
 
+			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
 			expectedPodDeletions: 0,
 		},
 		testCase{
-			description: "4 workers and 2 ps is succeeded, policy is None",
-			tfJob:       testutil.NewTFJobWithCleanPolicy(0, 4, 2, tfv1alpha2.CleanPodPolicyNone),
+			description: "1 scheduler, 4 workers and 2 servers is succeeded, policy is None",
+			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1alpha2.CleanPodPolicyNone),
+
+		        pendingSchedulerPods:  0,
+		        activeSchedulerPods:   0,
+		        succeededSchedulerPods:1,
+		        failedSchedulerPods:   0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    0,
 			succeededWorkerPods: 4,
 			failedWorkerPods:    0,
 
-			pendingPSPods:   0,
-			activePSPods:    0,
-			succeededPSPods: 2,
-			failedPSPods:    0,
+			pendingServerPods:   0,
+			activeServerPods:    0,
+			succeededServerPods: 2,
+			failedServerPods:    0,
 
+			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
 			expectedPodDeletions: 0,
-		},*/
+		},
 	}
 	for _, tc := range testCases {
 		// Prepare the clientset and controller for the test.
@@ -386,7 +404,7 @@ func TestCleanupMXJob(t *testing.T) {
 	ttl2s := &ttlaf2s
 	testCases := []testCase{
 		testCase{
-			description: "1 scheduler , 4 workers and 2 ps is running, TTLSecondsAfterFinished unset",
+			description: "1 scheduler , 4 workers and 2 server is running, TTLSecondsAfterFinished unset",
 			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, nil),
 
 		        pendingSchedulerPods:  0,
@@ -406,48 +424,60 @@ func TestCleanupMXJob(t *testing.T) {
 
 			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
 			expectedDeleteFinished: false,
-		},/*
+		},
 		testCase{
-			description: "4 workers and 2 ps is running, TTLSecondsAfterFinished is 0",
-			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, ttl0),
+			description: "1 scheduler, 4 workers and 2 servers is running, TTLSecondsAfterFinished is 0",
+			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, ttl0),
+
+		        pendingSchedulerPods:  0,
+		        activeSchedulerPods:   1,
+		        succeededSchedulerPods:0,
+		        failedSchedulerPods:   0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
 			succeededWorkerPods: 0,
 			failedWorkerPods:    0,
 
-			pendingPSPods:   0,
-			activePSPods:    2,
-			succeededPSPods: 0,
-			failedPSPods:    0,
+			pendingServerPods:   0,
+			activeServerPods:    2,
+			succeededServerPods: 0,
+			failedServerPods:    0,
 
+			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
 			expectedDeleteFinished: true,
 		},
 		testCase{
-			description: "4 workers and 2 ps is succeeded, TTLSecondsAfterFinished is 2",
-			tfJob:       testutil.NewTFJobWithCleanupJobDelay(0, 4, 2, ttl2s),
+			description: "1 scheduler, 4 workers and 2 servers is succeeded, TTLSecondsAfterFinished is 2",
+			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, ttl2s),
+
+		        pendingSchedulerPods:  0,
+		        activeSchedulerPods:   0,
+		        succeededSchedulerPods:1,
+		        failedSchedulerPods:   0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    0,
 			succeededWorkerPods: 4,
 			failedWorkerPods:    0,
 
-			pendingPSPods:   0,
-			activePSPods:    0,
-			succeededPSPods: 2,
-			failedPSPods:    0,
+			pendingServerPods:   0,
+			activeServerPods:    0,
+			succeededServerPods: 2,
+			failedServerPods:    0,
 
+			activeSchedulerServices: 1,
 			activeWorkerServices: 4,
-			activePSServices:     2,
+			activeServerServices:     2,
 
 			expectedDeleteFinished: true,
-		},*/
+		},
 	}
 	for _, tc := range testCases {
 		// Prepare the clientset and controller for the test.
