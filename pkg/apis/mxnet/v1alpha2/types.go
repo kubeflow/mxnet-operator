@@ -48,9 +48,6 @@ type MXJobSpec struct {
 	// Default to Running.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
-	// SchedulerName specifies the name of scheduler which should handle the MXJob.
-	SchedulerName string `json:"schedulerName,omitempty"`
-
 	// TTLSecondsAfterFinished is the TTL to clean up mxnet-jobs (temporary
 	// before kubernetes adds the cleanup controller).
 	// It may take extra ReconcilePeriod seconds for the cleanup, since
@@ -62,7 +59,7 @@ type MXJobSpec struct {
 	// specifies the MX replicas to run.
 	// For example,
 	//   {
-        //     "Scheduler": MXReplicaSpec,
+	//     "Scheduler": MXReplicaSpec,
 	//     "Server": MXReplicaSpec,
 	//     "Worker": MXReplicaSpec,
 	//   }
@@ -128,7 +125,6 @@ const (
 	// MXReplicaTypeWorker is the type for workers of distributed MXNet.
 	// This is also used for non-distributed MXNet.
 	MXReplicaTypeWorker MXReplicaType = "Worker"
-
 )
 
 // MXJobStatus represents the current observed state of the MXJob.
