@@ -36,7 +36,7 @@ import (
 	mxjobclient "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
 	"github.com/kubeflow/mxnet-operator/pkg/util"
-	train_util "github.com/kubeflow/mxnet-operator/pkg/util/train"
+	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
 )
 
 // TrainingJob represents a training job specification.
