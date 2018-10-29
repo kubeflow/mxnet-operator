@@ -39,6 +39,8 @@ const (
 	Plural = "mxjobs"
 	// Singular is the singular for MXJob.
 	Singular = "mxjob"
+	// MXCRD is the CRD name for MXJob.
+	MXCRD = "mxjobs.kubeflow.org"
 )
 
 var (
