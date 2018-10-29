@@ -36,8 +36,8 @@ import (
 	"github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	controller "github.com/kubeflow/mxnet-operator/pkg/controller.v2/mxnet"
-	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	"github.com/kubeflow/mxnet-operator/pkg/version"
+	"github.com/kubeflow/tf-operator/pkg/util/signals"
 )
 
 const (
@@ -106,7 +106,7 @@ func Run(opt *options.ServerOption) error {
 	unstructuredInformer := controller.NewUnstructuredMXJobInformer(kcfg, opt.Namespace)
 
 	// Create mx controller.
-	tc := controller.NewMXController(unstructuredInformer, kubeClientSet, mxJobClientSet, kubeInformerFactory, mxJobInformerFactory, *opt) 
+	tc := controller.NewMXController(unstructuredInformer, kubeClientSet, mxJobClientSet, kubeInformerFactory, mxJobInformerFactory, *opt)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
@@ -129,6 +129,9 @@ func Run(opt *options.ServerOption) error {
 
 	// Prepare event clients.
 	eventBroadcaster := record.NewBroadcaster()
+	if err = v1.AddToScheme(scheme.Scheme); err != nil {
+		return fmt.Errorf("CoreV1 Add Scheme failed: %v", err)
+	}
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "mxnet-operator"})
 
 	rl := &resourcelock.EndpointsLock{
