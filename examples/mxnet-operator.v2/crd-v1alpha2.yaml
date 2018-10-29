@@ -18,7 +18,7 @@ spec:
             mxReplicaSpecs:
               properties:
                 # The validation works when the configuration contains
-                # `Worker`, `Server` or `Scheduler`. Otherise it will not be validated.
+                # `Worker`, `Server` or `Scheduler`. Otherwise it will not be validated.
                 Scheduler:
                   properties:
                     replicas:
