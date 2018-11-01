@@ -35,7 +35,7 @@ const (
 	mxConfig = "MX_CONFIG"
 
 	// podTemplateRestartPolicyReason is the warning reason when the restart
-	// policy is setted in pod template.
+	// policy is set in pod template.
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
 	exitedWithCodeReason = "ExitedWithCode"
@@ -84,9 +84,9 @@ func (tc *MXController) reconcilePods(
 				if status.Name == mxv1alpha2.DefaultContainerName && state.Terminated != nil {
 					exitCode = state.Terminated.ExitCode
 					logger.Infof("Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
- 					tc.Recorder.Eventf(mxjob, v1.EventTypeNormal, exitedWithCodeReason, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode) 
+					tc.Recorder.Eventf(mxjob, v1.EventTypeNormal, exitedWithCodeReason, "Pod: %v.%v exited with code %v", pod.Namespace, pod.Name, exitCode)
 				}
-			}			
+			}
 			// Check if the pod is retryable.
 			if spec.RestartPolicy == mxv1alpha2.RestartPolicyExitCode {
 				if pod.Status.Phase == v1.PodFailed && train_util.IsRetryableExitCode(exitCode) {
@@ -97,7 +97,6 @@ func (tc *MXController) reconcilePods(
 					restart = true
 				}
 			}
-
 
 			// Check whether scheduler is exited without error.
 			if rtype == mxv1alpha2.MXReplicaTypeScheduler && exitCode == 0 {
@@ -144,7 +143,6 @@ func (tc *MXController) createNewPod(mxjob *mxv1alpha2.MXJob, rt, index string, 
 		podTemplate.Labels[key] = value
 	}
 
-        setSchedulerName(podTemplate, mxjob)
 	if err := setClusterSpec(podTemplate, mxjob, rt, index); err != nil {
 		return err
 	}
@@ -174,10 +172,6 @@ func (tc *MXController) createNewPod(mxjob *mxv1alpha2.MXJob, rt, index string, 
 	return nil
 }
 
-func setSchedulerName(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob) {
-	podTemplateSpec.Spec.SchedulerName = mxjob.Spec.SchedulerName
-}
-
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob, rt, index string) error {
 
 	// Add MX_CONFIG environment variable.
@@ -190,20 +184,20 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 		}
 
 		for t, r := range mxjob.Spec.MXReplicaSpecs {
-		
+
 			port, err := GetPortFromMXJob(mxjob, t)
 			if err != nil {
 				return err
-			}	
-                   
-                        rt := strings.ToLower(string(t))
+			}
+
+			rt := strings.ToLower(string(t))
 
 			switch t {
 			case mxv1alpha2.MXReplicaTypeScheduler:
 				c.Env[0].Name = "DMLC_PS_ROOT_PORT"
 				c.Env[0].Value = strconv.Itoa(int(port))
 				c.Env[1].Name = "DMLC_PS_ROOT_URI"
-				c.Env[1].Value = fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0)))	
+				c.Env[1].Value = fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0)))
 			case mxv1alpha2.MXReplicaTypeServer:
 				c.Env[2].Name = "DMLC_NUM_SERVER"
 				c.Env[2].Value = strconv.Itoa(int(*r.Replicas))
@@ -218,7 +212,7 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 
 		c.Env[5].Name = "DMLC_USE_KUBERNETES"
 		c.Env[5].Value = strconv.Itoa(1)
-	} 
+	}
 	return nil
 }
 

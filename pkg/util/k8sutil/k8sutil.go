@@ -21,13 +21,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // for gcp auth
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	mxv1alpha1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha1"
 )
 
 // RecommendedConfigPathEnvVar is a environment variable for path configuration
@@ -81,21 +78,6 @@ func IsKubernetesResourceAlreadyExistError(err error) bool {
 // IsKubernetesResourceNotFoundError throws error when there is no kubernetes resource found.
 func IsKubernetesResourceNotFoundError(err error) bool {
 	return apierrors.IsNotFound(err)
-}
-
-// JobListOpt returns a list of options after assigning the label selector for a given cluster name
-func JobListOpt(clusterName string) metav1.ListOptions {
-	return metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(LabelsForJob(clusterName)).String(),
-	}
-}
-
-// LabelsForJob returns map which stores the mx_job name and app label.
-func LabelsForJob(jobName string) map[string]string {
-	return map[string]string{
-		"mx_job": jobName,
-		"app":    mxv1alpha1.AppLabel,
-	}
 }
 
 // CascadeDeletOptions are part of garbage collection policy.

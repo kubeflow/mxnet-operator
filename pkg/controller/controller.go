@@ -116,7 +116,7 @@ func New(kubeClient kubernetes.Interface, mxJobClient mxjobclient.Interface,
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: controllerName})
 
-	// Use a ratelimiter with overall  and per-item rate limitting.
+	// Use a rate limiter with overall  and per-item rate limiting.
 	// The overall is a token bucket and the per-item is exponential
 	// For the per item
 	rateLimiter := workqueue.NewMaxOfRateLimiter(
@@ -215,7 +215,7 @@ func (c *Controller) processNextWorkItem() bool {
 	_, err := c.syncHandler(key.(string))
 	if err == nil {
 		// Calling forget resets the rate limiter for this item.
-		// Since the sync was processed successfully we want to reset the ratelimiter
+		// Since the sync was processed successfully we want to reset the rate limiter
 		// so that future events can be processed immediately.
 		log.WithFields(log.Fields{
 			"job": key,

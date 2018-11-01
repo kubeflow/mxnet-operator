@@ -11,8 +11,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/mxnet-operator/pkg/util/k8sutil"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -33,9 +33,9 @@ func (tc *MXController) addMXJob(obj interface{}) {
 		logger.Errorf("Failed to convert the MXJob: %v", err)
 		// Log the failure to conditions.
 		if err == errFailedMarshal {
- 			errMsg := fmt.Sprintf("Failed to marshal the object to MXJob; the spec is invalid: %v", err) 
+			errMsg := fmt.Sprintf("Failed to marshal the object to MXJob; the spec is invalid: %v", err)
 			logger.Warn(errMsg)
- 			// TODO(jlewi): v1 doesn't appear to define an error type. 
+			// TODO(jlewi): v1 doesn't appear to define an error type.
 			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalMXJobReason, errMsg)
 
 			status := mxv1alpha2.MXJobStatus{
@@ -114,7 +114,7 @@ func (tc *MXController) deletePodsAndServices(mxJob *mxv1alpha2.MXJob, pods []*v
 	}
 
 	for _, pod := range pods {
-		if *mxJob.Spec.CleanPodPolicy == mxv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning{
+		if *mxJob.Spec.CleanPodPolicy == mxv1alpha2.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
 			continue
 		}
 
@@ -154,7 +154,7 @@ func (tc *MXController) cleanupMXJob(mxJob *mxv1alpha2.MXJob) error {
 	return nil
 }
 
-// deleteMXJob delets the given MXJob.
+// deleteMXJob deletes the given MXJob.
 func (tc *MXController) deleteMXJob(mxJob *mxv1alpha2.MXJob) error {
 	return tc.mxJobClientSet.KubeflowV1alpha2().MXJobs(mxJob.Namespace).Delete(mxJob.Name, &metav1.DeleteOptions{})
 }
