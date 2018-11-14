@@ -25,6 +25,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
+	"github.com/kubeflow/mxnet-operator/pkg/tuner"
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
@@ -179,10 +180,6 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 
 		c := &podTemplateSpec.Spec.Containers[i]
 
-		if len(c.Env) == 0 {
-			c.Env = make([]v1.EnvVar, 6)
-		}
-
 		for t, r := range mxjob.Spec.MXReplicaSpecs {
 
 			port, err := GetPortFromMXJob(mxjob, t)
@@ -194,24 +191,54 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 
 			switch t {
 			case mxv1alpha2.MXReplicaTypeScheduler:
-				c.Env[0].Name = "DMLC_PS_ROOT_PORT"
-				c.Env[0].Value = strconv.Itoa(int(port))
-				c.Env[1].Name = "DMLC_PS_ROOT_URI"
-				c.Env[1].Value = fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0)))
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_PS_ROOT_PORT",
+					Value: strconv.Itoa(int(port)),
+				})
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_PS_ROOT_URI",
+					Value: fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0))),
+				})
 			case mxv1alpha2.MXReplicaTypeServer:
-				c.Env[2].Name = "DMLC_NUM_SERVER"
-				c.Env[2].Value = strconv.Itoa(int(*r.Replicas))
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_NUM_SERVER",
+					Value: strconv.Itoa(int(*r.Replicas)),
+				})
 			case mxv1alpha2.MXReplicaTypeWorker:
-				c.Env[3].Name = "DMLC_NUM_WORKER"
-				c.Env[3].Value = strconv.Itoa(int(*r.Replicas))
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_NUM_WORKER",
+					Value: strconv.Itoa(int(*r.Replicas)),
+				})
+			case mxv1alpha2.MXReplicaTypeTunerTracker:
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_TUNER_TRACKER_PORT",
+					Value: strconv.Itoa(int(port)),
+				})
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_TUNER_TRACKER_URI",
+					Value: fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0))),
+				})
+			case mxv1alpha2.MXReplicaTypeTunerServer:
+				tunerKey, err := tuner.GetTunerServerKey(mxjob)
+				if err != nil {
+					return err
+				}
+				c.Env = append(c.Env, v1.EnvVar{
+					Name:  "DMLC_TUNER_SERVER_KEY",
+					Value: tunerKey,
+				})
 			}
 		}
 
-		c.Env[4].Name = "DMLC_ROLE"
-		c.Env[4].Value = strings.ToLower(string(rt))
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  "DMLC_ROLE",
+			Value: strings.ToLower(string(rt)),
+		})
 
-		c.Env[5].Name = "DMLC_USE_KUBERNETES"
-		c.Env[5].Value = strconv.Itoa(1)
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  "DMLC_USE_KUBERNETES",
+			Value: strconv.Itoa(1),
+		})
 	}
 	return nil
 }

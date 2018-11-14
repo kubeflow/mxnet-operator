@@ -18,6 +18,7 @@ import (
 
 const (
 	failedMarshalMXJobReason = "FailedInvalidMXJobSpec"
+	inspectFailMXJobReason   = "InspectFailedInvalidMXReplicaSpec"
 )
 
 // When a pod is added, set the defaults and enqueue the current mxjob.

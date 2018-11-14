@@ -16,8 +16,8 @@ import (
 	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/validation"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"github.com/kubeflow/mxnet-operator/pkg/util/unstructured"
+	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (
@@ -29,6 +29,7 @@ var (
 	errGetFromKey    = fmt.Errorf("Failed to get MXJob from key")
 	errNotExists     = fmt.Errorf("The object is not found")
 	errFailedMarshal = fmt.Errorf("Failed to marshal the object to MXJob")
+	errWrongJobMode  = fmt.Errorf("Failed to inspect jobMode, maybe mxReplicaSpecs has a member which is not belong to this jobMode or misses one")
 )
 
 func NewUnstructuredMXJobInformer(restConfig *restclientset.Config, namespace string) mxjobinformersv1alpha2.MXJobInformer {
@@ -59,7 +60,7 @@ func (tc *MXController) NewMXJobInformer(mxJobInformerFactory mxjobinformers.Sha
 	return mxJobInformerFactory.Kubeflow().V1alpha2().MXJobs()
 }
 
-func (tc *MXController) getMXJobFromName(namespace, name string) (*mxv1alpha2.MXJob, error) { 	
+func (tc *MXController) getMXJobFromName(namespace, name string) (*mxv1alpha2.MXJob, error) {
 	key := fmt.Sprintf("%s/%s", namespace, name)
 	return tc.getMXJobFromKey(key)
 }
