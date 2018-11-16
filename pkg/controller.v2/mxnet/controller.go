@@ -36,7 +36,6 @@ import (
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1alpha2"
 	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/kubeflow/v1alpha2"
-	"github.com/kubeflow/mxnet-operator/pkg/tuner"
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -304,14 +303,6 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	}
 
 	mxjob := sharedMXJob.DeepCopy()
-	// MXjob automatic extension
-	err = tc.autoExtension(mxjob)
-	if err != nil {
-		errMsg := fmt.Sprintf("Inspect Fail: %v", err)
-		mxlogger.LoggerForJob(mxjob).Warn(errMsg)
-		tc.Recorder.Event(mxjob, v1.EventTypeWarning, inspectFailMXJobReason, errMsg)
-		return true, err
-	}
 	mxjobNeedsSync := tc.satisfiedExpectations(mxjob)
 
 	if tc.Config.EnableGangScheduling {
@@ -419,6 +410,9 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1alpha2.MXJob) error {
 // inspectMXjob make sure a MXjob has all the necessary MXReplicaSpecs members for a special jobMode.
 // if not it return err
 func (tc *MXController) inspectMXjob(mxjob *mxv1alpha2.MXJob) error {
+
+	logger := mxlogger.LoggerForJob(mxjob)
+
 	if mxjob.Spec.JobMode == mxv1alpha2.MXTrain {
 		// Must have MXReplicaTypeScheduler, MXReplicaTypeServer, MXReplicaTypeWorker, shouldn't have
 		// MXReplicaTypeTuner
@@ -431,32 +425,20 @@ func (tc *MXController) inspectMXjob(mxjob *mxv1alpha2.MXJob) error {
 		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeWorker]; !ok {
 			return errWrongJobMode
 		}
-		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTuner]; ok {
-			return errWrongJobMode
-		}
 	} else if mxjob.Spec.JobMode == mxv1alpha2.MXTune {
 		// Must have MXReplicaTypeTuner, shouldn't have MXReplicaTypeScheduler, MXReplicaTypeServer,
 		// MXReplicaTypeWorker
-		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeScheduler]; ok {
+		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerTracker]; !ok {
 			return errWrongJobMode
 		}
-		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeServer]; ok {
+		if s, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerRPCServer]; !ok {
 			return errWrongJobMode
-		}
-		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeWorker]; ok {
-			return errWrongJobMode
+		} else if s.Label == "" {
+			logger.Warnf("MXReplicaTypeTunerRPCServer may need label to set tvm rpc-server key")
 		}
 		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTuner]; !ok {
 			return errWrongJobMode
 		}
-	}
-	return nil
-}
-
-// autoExtension insert some necessary MXReplicaSpecs members while user doesn't set them
-func (tc *MXController) autoExtension(mxjob *mxv1alpha2.MXJob) error {
-	if mxjob.Spec.JobMode == mxv1alpha2.MXTune {
-		tuner.AutoExtension(mxjob)
 	}
 	return nil
 }

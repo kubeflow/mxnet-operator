@@ -25,7 +25,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1alpha2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
-	"github.com/kubeflow/mxnet-operator/pkg/tuner"
 	"github.com/kubeflow/tf-operator/pkg/controller.v2/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	train_util "github.com/kubeflow/tf-operator/pkg/util/train"
@@ -218,14 +217,10 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 					Name:  "DMLC_TUNER_TRACKER_URI",
 					Value: fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0))),
 				})
-			case mxv1alpha2.MXReplicaTypeTunerServer:
-				tunerKey, err := tuner.GetTunerServerKey(mxjob)
-				if err != nil {
-					return err
-				}
+			case mxv1alpha2.MXReplicaTypeTunerRPCServer:
 				c.Env = append(c.Env, v1.EnvVar{
 					Name:  "DMLC_TUNER_SERVER_KEY",
-					Value: tunerKey,
+					Value: r.Label,
 				})
 			}
 		}

@@ -76,8 +76,8 @@ type MXReplicaSpec struct {
 	// If unspecified, defaults to 1.
 	Replicas *int32 `json:"replicas,omitempty"`
 
-	// TunerSpec store the information for autotuning.
-	TunerSpec *TunerSpec `json:"tunerSpec,omitempty"`
+	// Label is used as tunerServerKey, it's designed for tvm auto-tuning.
+	Label string `json:"label,omitempty"`
 
 	// Template is the object that describes the pod that
 	// will be created for this MXReplica. RestartPolicy in PodTemplateSpec
@@ -88,20 +88,6 @@ type MXReplicaSpec struct {
 	// One of Always, OnFailure, Never and ExitCode.
 	// Default to Never.
 	RestartPolicy RestartPolicy `json:"restartPolicy,omitempty"`
-}
-
-type TunerSpec struct {
-	// TunerServerReplicas is the desired number of replicas of the tuning server.
-	// If unspecified, defaults to 1.
-	// This argument is used in Tune Mode.
-	TunerServerReplicas *int32 `json:"tunerServerReplicas,omitempty"`
-
-	// Weather use gpu for tuning
-	TunerServerGPU bool `json:"tunerServerGPU,omitempty"`
-
-	// Tuner use TunerServerKey to find target server, if it is omit, TunerServerKey
-	// will be set as mxjob.Name + "-tunerServerKey"
-	TunerServerKey string `json:"tunerServerKey,omitempty"`
 }
 
 // CleanPodPolicy describes how to deal with pods when the MXJob is finished.
@@ -165,7 +151,7 @@ const (
 	MXReplicaTypeTunerTracker MXReplicaType = "TunerTracker"
 
 	// MXReplicaTypeTunerServer
-	MXReplicaTypeTunerServer MXReplicaType = "TunerServer"
+	MXReplicaTypeTunerRPCServer MXReplicaType = "TunerRPCServer"
 
 	// MXReplicaTuner is the type for auto-tuning of distributed MXNet.
 	// This is also used for non-distributed MXNet.
