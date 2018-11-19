@@ -3,6 +3,7 @@ kind: "MXJob"
 metadata:
   name: "mxnet-job"
 spec:
+  jobMode: MXTrain
   mxReplicaSpecs:
     Scheduler:
       replicas: 1

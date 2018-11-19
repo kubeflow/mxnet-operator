@@ -431,7 +431,7 @@ func (tc *MXController) inspectMXjob(mxjob *mxv1alpha2.MXJob) error {
 		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerTracker]; !ok {
 			return errWrongJobMode
 		}
-		if s, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerRPCServer]; !ok {
+		if s, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerServer]; !ok {
 			return errWrongJobMode
 		} else if s.Label == "" {
 			logger.Warnf("MXReplicaTypeTunerRPCServer may need label to set tvm rpc-server key")

@@ -151,7 +151,7 @@ const (
 	MXReplicaTypeTunerTracker MXReplicaType = "TunerTracker"
 
 	// MXReplicaTypeTunerServer
-	MXReplicaTypeTunerRPCServer MXReplicaType = "TunerRPCServer"
+	MXReplicaTypeTunerServer MXReplicaType = "TunerServer"
 
 	// MXReplicaTuner is the type for auto-tuning of distributed MXNet.
 	// This is also used for non-distributed MXNet.

@@ -217,7 +217,7 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 					Name:  "DMLC_TUNER_TRACKER_URI",
 					Value: fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0))),
 				})
-			case mxv1alpha2.MXReplicaTypeTunerRPCServer:
+			case mxv1alpha2.MXReplicaTypeTunerServer:
 				c.Env = append(c.Env, v1.EnvVar{
 					Name:  "DMLC_TUNER_SERVER_KEY",
 					Value: r.Label,
