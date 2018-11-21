@@ -14,7 +14,7 @@ spec:
           - name: mxnet
             image: kingonthestar/auto-tuning:1.0
             command: ["python3"]
-            args: ["-m","tvm.exec.rpc_tracker","--host=0.0.0.0","--port=9190"]
+            args: ["/home/test/startMXJob.py"]
     TunerServer:
       label: gpu1
       replicas: 1
@@ -24,8 +24,8 @@ spec:
           containers:
           - name: mxnet
             image: kingonthestar/auto-tuning:1.0
-            command: ["/bin/sh"]
-            args: ["-c","sleep 5; python3 -m tvm.exec.rpc_server --tracker=$DMLC_TUNER_TRACKER_URI:9190 --key=$DMLC_TUNER_SERVER_KEY"]
+            command: ["python3"]
+            args: ["/home/test/startMXJob.py"]
             resources:
               limits:
                 nvidia.com/gpu: 1
@@ -37,5 +37,5 @@ spec:
           containers:
           - name: mxnet
             image: kingonthestar/auto-tuning:1.0
-            command: ["/bin/sh"]
-            args: ["-c","sleep 5; python3 /home/test/auto-tuning.py --tracker $DMLC_TUNER_TRACKER_URI --tracker_port 9190 --server_key $DMLC_TUNER_SERVER_KEY"]
+            command: ["python3"]
+            args: ["/home/test/startMXJob.py"]
