@@ -174,56 +174,25 @@ func (tc *MXController) createNewPod(mxjob *mxv1alpha2.MXJob, rt, index string, 
 
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob, rt, index string) error {
 
+	// Generate MX_CONFIG JSON string.
+	mxConfigStr, err := genMXConfigJSONStr(mxjob, rt, index)
+	if err != nil {
+		return err
+	}
+
+	if mxConfigStr == "" {
+		return nil
+	}
+
 	// Add MX_CONFIG environment variable.
 	for i := range podTemplateSpec.Spec.Containers {
 
 		c := &podTemplateSpec.Spec.Containers[i]
 
-		for t, r := range mxjob.Spec.MXReplicaSpecs {
-
-			port, err := GetPortFromMXJob(mxjob, t)
-			if err != nil {
-				return err
-			}
-
-			rt := strings.ToLower(string(t))
-
-			switch t {
-			case mxv1alpha2.MXReplicaTypeScheduler:
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_PS_ROOT_PORT",
-					Value: strconv.Itoa(int(port)),
-				})
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_PS_ROOT_URI",
-					Value: fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0))),
-				})
-			case mxv1alpha2.MXReplicaTypeServer:
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_NUM_SERVER",
-					Value: strconv.Itoa(int(*r.Replicas)),
-				})
-			case mxv1alpha2.MXReplicaTypeWorker:
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_NUM_WORKER",
-					Value: strconv.Itoa(int(*r.Replicas)),
-				})
-			case mxv1alpha2.MXReplicaTypeTunerTracker:
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_TUNER_TRACKER_PORT",
-					Value: strconv.Itoa(int(port)),
-				})
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_TUNER_TRACKER_URI",
-					Value: fmt.Sprintf("%s", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", 0))),
-				})
-			case mxv1alpha2.MXReplicaTypeTunerServer:
-				c.Env = append(c.Env, v1.EnvVar{
-					Name:  "DMLC_TUNER_SERVER_KEY",
-					Value: r.Label,
-				})
-			}
-		}
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  mxConfig,
+			Value: mxConfigStr,
+		})
 
 		c.Env = append(c.Env, v1.EnvVar{
 			Name:  "DMLC_ROLE",
