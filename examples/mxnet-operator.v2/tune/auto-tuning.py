@@ -2,6 +2,7 @@ import os
 import sys
 
 import numpy as np
+import argparse
 
 import nnvm.testing
 import nnvm.compiler
@@ -164,25 +165,16 @@ def tune_and_evaluate(tuning_opt):
 # Uncomment the following line to run it by yourself.
 
 if __name__ == '__main__':
-    tracker = ''
-    tracker_port = 0
-    server_key = ''
-    for i in range(len(sys.argv)):
-        if sys.argv[i] == '--tracker':
-            tracker = sys.argv[i + 1]
-        elif sys.argv[i] == '--tracker_port':
-            tracker_port = int(sys.argv[i + 1])
-        elif sys.argv[i] == '--server_key':
-            server_key = sys.argv[i + 1]
-    if tracker == '':
-        print("Need tracker url")
-        exit(1)
-    elif tracker_port == 0:
-        print("Need tracker port")
-        exit(1)
-    elif server_key == '':
-        print("Need server_key")
-        exit(1)
+
+    parser = argparse.ArgumentParser(description="auto tuning",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--tracker', default='auto-tuning-job-tunertracker-0',
+                        help='the url of tune tracker')
+    parser.add_argument('--tracker_port', type=int, default=9190,
+                        help='the port of tune tracker')
+    parser.add_argument('--server_key', default='gpu',
+                        help='the key to identify tune server')
+    args = parser.parse_args()
 
     tuning_option = {
         'log_filename': log_file,
@@ -192,12 +184,12 @@ if __name__ == '__main__':
         'early_stopping': 600,
 
         'measure_option': autotvm.measure_option(
-                builder=autotvm.LocalBuilder(timeout=10),
-                runner=autotvm.RPCRunner(
-                    server_key,  # change the device key to your key
-                    tracker, tracker_port,
-                    number=20, repeat=3, timeout=4),
-            ),
+            builder=autotvm.LocalBuilder(timeout=10),
+            runner=autotvm.RPCRunner(
+                args.server_key,  # change the device key to your key
+                args.tracker, args.tracker_port,
+                number=20, repeat=3, timeout=4),
+        ),
     }
 
     tune_and_evaluate(tuning_option)

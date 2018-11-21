@@ -14,7 +14,7 @@ spec:
           - name: mxnet
             image: kingonthestar/auto-tuning:1.0
             command: ["python3"]
-            args: ["/home/test/startMXJob.py"]
+            args: ["/home/test/start-job.py"]
     TunerServer:
       label: gpu1
       replicas: 1
@@ -25,7 +25,7 @@ spec:
           - name: mxnet
             image: kingonthestar/auto-tuning:1.0
             command: ["python3"]
-            args: ["/home/test/startMXJob.py"]
+            args: ["/home/test/start-job.py"]
             resources:
               limits:
                 nvidia.com/gpu: 1
@@ -38,4 +38,4 @@ spec:
           - name: mxnet
             image: kingonthestar/auto-tuning:1.0
             command: ["python3"]
-            args: ["/home/test/startMXJob.py"]
+            args: ["/home/test/start-job.py"]

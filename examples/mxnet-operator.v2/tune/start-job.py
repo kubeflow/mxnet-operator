@@ -19,7 +19,7 @@ if __name__ == '__main__':
     elif task_type == "tunertracker":
         addr = cluster_config["tunertracker"][0]
         url_port = addr.split(':')
-        command = "python3 -m tvm.exec.rpc_tracker --host=0.0.0.0 --port={0}".format(url_port[1])
+        command = "python3 -m tvm.exec.rpc_tracker --port={0}".format(url_port[1])
         print("DO: " + command)
         os.system(command)
     elif task_type == "tunerserver":
