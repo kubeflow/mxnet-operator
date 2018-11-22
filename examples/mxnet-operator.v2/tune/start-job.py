@@ -14,27 +14,23 @@ if __name__ == '__main__':
 
     if task_type == "":
         print("No task_type, Error")
-    elif task_type == "scheduler" or task_type == "server" or task_type == "worker":
-        print("Training task: this python script doesn't matter this procession")
     elif task_type == "tunertracker":
         addr = cluster_config["tunertracker"][0]
-        url_port = addr.split(':')
-        command = "python3 -m tvm.exec.rpc_tracker --port={0}".format(url_port[1])
+        command = "python3 -m tvm.exec.rpc_tracker --port={0}".format(addr.get('port'))
         print("DO: " + command)
         os.system(command)
     elif task_type == "tunerserver":
         time.sleep(5)
         addr = cluster_config["tunertracker"][0]
         label = labels_config["tunerserver"]
-        command = "python3 -m tvm.exec.rpc_server --tracker={0} --key={1}".format(addr, label)
+        command = "python3 -m tvm.exec.rpc_server --tracker={0}:{1} --key={2}".format(addr.get('url'), addr.get('port'), label)
         print("DO: " + command)
         os.system(command)
     elif task_type == "tuner":
         time.sleep(5)
         addr = cluster_config["tunertracker"][0]
-        url_port = addr.split(':')
         label = labels_config["tunerserver"]
-        command = "python3 /home/test/auto-tuning.py --tracker {0} --tracker_port {1} --server_key {2}".format(url_port[0], url_port[1], label)
+        command = "python3 /home/auto-tuning.py --tracker {0} --tracker_port {1} --server_key {2}".format(addr.get('url'), addr.get('port'), label)
         print("DO: " + command)
         os.system(command)
     else:

@@ -16,6 +16,7 @@
 package mxnet
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -174,14 +175,16 @@ func (tc *MXController) createNewPod(mxjob *mxv1alpha2.MXJob, rt, index string, 
 
 func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob, rt, index string) error {
 
-	// Generate MX_CONFIG JSON string.
-	mxConfigStr, err := genMXConfigJSONStr(mxjob, rt, index)
+	// Generate MX_CONFIG JSON.
+	mxConfigData, err := genMXConfig(mxjob, rt, index)
 	if err != nil {
 		return err
 	}
 
-	if mxConfigStr == "" {
-		return nil
+	// Generate MX_CONFIG JSON Str.
+	mxConfigJson, err := json.Marshal(mxConfigData)
+	if err != nil {
+		return err
 	}
 
 	// Add MX_CONFIG environment variable.
@@ -189,14 +192,37 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1alpha2.MXJob
 
 		c := &podTemplateSpec.Spec.Containers[i]
 
+		// Set environment variable MX_CONFIG
 		c.Env = append(c.Env, v1.EnvVar{
 			Name:  mxConfig,
-			Value: mxConfigStr,
+			Value: string(mxConfigJson),
+		})
+
+		// Set Mxnet Distributed Training environment variable
+		// We get these envs from MX_COFING to make them stay identical
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  "DMLC_PS_ROOT_PORT",
+			Value: strconv.Itoa(getConfigAddr(&mxConfigData, mxv1alpha2.MXReplicaTypeScheduler, 0).Port),
+		})
+
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  "DMLC_PS_ROOT_URI",
+			Value: getConfigAddr(&mxConfigData, mxv1alpha2.MXReplicaTypeScheduler, 0).Url,
+		})
+
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  "DMLC_NUM_SERVER",
+			Value: strconv.Itoa(getConfigReplica(&mxConfigData, mxv1alpha2.MXReplicaTypeServer)),
+		})
+
+		c.Env = append(c.Env, v1.EnvVar{
+			Name:  "DMLC_NUM_WORKER",
+			Value: strconv.Itoa(getConfigReplica(&mxConfigData, mxv1alpha2.MXReplicaTypeWorker)),
 		})
 
 		c.Env = append(c.Env, v1.EnvVar{
 			Name:  "DMLC_ROLE",
-			Value: strings.ToLower(string(rt)),
+			Value: mxConfigData.Task.Type,
 		})
 
 		c.Env = append(c.Env, v1.EnvVar{
@@ -213,4 +239,24 @@ func setRestartPolicy(podTemplateSpec *v1.PodTemplateSpec, spec *mxv1alpha2.MXRe
 	} else {
 		podTemplateSpec.Spec.RestartPolicy = v1.RestartPolicy(spec.RestartPolicy)
 	}
+}
+
+func getConfigAddr(mxConfigData *MXConfig, rtype mxv1alpha2.MXReplicaType, index int) Url_Port {
+	rt := strings.ToLower(string(rtype))
+	var url_port Url_Port
+	if len(mxConfigData.Cluster[rt]) <= index {
+		// index out of range, maybe this url doen't exist
+		url_port = Url_Port{
+			Url:  "",
+			Port: 0,
+		}
+	} else {
+		url_port = mxConfigData.Cluster[rt][index]
+	}
+	return url_port
+}
+
+func getConfigReplica(mxConfigData *MXConfig, rtype mxv1alpha2.MXReplicaType) int {
+	rt := strings.ToLower(string(rtype))
+	return len(mxConfigData.Cluster[rt])
 }

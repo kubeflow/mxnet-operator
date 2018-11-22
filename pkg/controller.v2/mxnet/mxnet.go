@@ -16,7 +16,6 @@
 package mxnet
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -38,7 +37,12 @@ type MXConfig struct {
 }
 
 // ClusterSpec represents a cluster Mxnet specification.
-type ClusterSpec map[string][]string
+type ClusterSpec map[string][]Url_Port
+
+type Url_Port struct {
+	Url  string `json:"url"`
+	Port int    `json:"port"`
+}
 
 // LabelsSpec represents a label specification.
 type LabelsSpec map[string]string
@@ -49,21 +53,21 @@ type TaskSpec struct {
 	Index int    `json:"index"`
 }
 
-func genMXConfigJSONStr(mxjob *mxv1alpha2.MXJob, rtype, index string) (string, error) {
+func genMXConfig(mxjob *mxv1alpha2.MXJob, rtype, index string) (MXConfig, error) {
 	// Configure the MXCONFIG environment variable.
 	i, err := strconv.ParseInt(index, 0, 32)
 	if err != nil {
-		return "", err
+		return MXConfig{}, err
 	}
 
 	cluster, err := genClusterSpec(mxjob)
 	if err != nil {
-		return "", err
+		return MXConfig{}, err
 	}
 
 	labels, err := genLabelsSpec(mxjob)
 	if err != nil {
-		return "", err
+		return MXConfig{}, err
 	}
 
 	mxConfig := MXConfig{
@@ -75,12 +79,7 @@ func genMXConfigJSONStr(mxjob *mxv1alpha2.MXJob, rtype, index string) (string, e
 		},
 	}
 
-	mxConfigJSONStr, err := json.Marshal(mxConfig)
-	if err != nil {
-		return "", err
-	}
-
-	return string(mxConfigJSONStr), nil
+	return mxConfig, nil
 }
 
 // genClusterSpec will generate ClusterSpec.
@@ -89,14 +88,17 @@ func genClusterSpec(mxjob *mxv1alpha2.MXJob) (ClusterSpec, error) {
 
 	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
 		rt := strings.ToLower(string(rtype))
-		replicaNames := make([]string, 0, *spec.Replicas)
+		replicaNames := make([]Url_Port, 0, *spec.Replicas)
 
 		port, err := GetPortFromMXJob(mxjob, rtype)
 		if err != nil {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := fmt.Sprintf("%s:%d", jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", i)), port)
+			host := Url_Port{
+				Url:  jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", i)),
+				Port: int(port),
+			}
 			replicaNames = append(replicaNames, host)
 		}
 
