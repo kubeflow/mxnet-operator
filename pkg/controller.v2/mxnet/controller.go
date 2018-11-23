@@ -239,6 +239,15 @@ func (tc *MXController) processNextWorkItem() bool {
 		return true
 	}
 
+	// Verify
+	err = tc.inspectMXjob(mxJob)
+	if err != nil {
+		errMsg := fmt.Sprintf("Inspect Fail: %v", err)
+		mxlogger.LoggerForJob(mxJob).Warn(errMsg)
+		tc.Recorder.Event(mxJob, v1.EventTypeWarning, inspectFailMXJobReason, errMsg)
+		return true
+	}
+
 	// Sync MXJob to match the actual state to this desired state.
 	forget, err := tc.syncHandler(key.(string))
 	if err == nil {
@@ -319,7 +328,6 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	return true, err
 }
 
-
 func getTotalReplicas(mxjob *mxv1alpha2.MXJob) int32 {
 	mxjobReplicas := int32(0)
 	for _, r := range mxjob.Spec.MXReplicaSpecs {
@@ -397,6 +405,42 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1alpha2.MXJob) error {
 
 	// TODO(CPH): Add check here, no need to update the mxjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(mxjob)
+}
+
+// inspectMXjob make sure a MXjob has all the necessary MXReplicaSpecs members for a special jobMode.
+// if not it return err
+func (tc *MXController) inspectMXjob(mxjob *mxv1alpha2.MXJob) error {
+
+	logger := mxlogger.LoggerForJob(mxjob)
+
+	if mxjob.Spec.JobMode == mxv1alpha2.MXTrain {
+		// Must have MXReplicaTypeScheduler, MXReplicaTypeServer, MXReplicaTypeWorker, shouldn't have
+		// MXReplicaTypeTuner
+		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeScheduler]; !ok {
+			return errWrongJobMode
+		}
+		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeServer]; !ok {
+			return errWrongJobMode
+		}
+		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeWorker]; !ok {
+			return errWrongJobMode
+		}
+	} else if mxjob.Spec.JobMode == mxv1alpha2.MXTune {
+		// Must have MXReplicaTypeTuner, shouldn't have MXReplicaTypeScheduler, MXReplicaTypeServer,
+		// MXReplicaTypeWorker
+		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerTracker]; !ok {
+			return errWrongJobMode
+		}
+		if s, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTunerServer]; !ok {
+			return errWrongJobMode
+		} else if s.Label == "" {
+			logger.Warnf("MXReplicaTypeTunerRPCServer may need label to set tvm rpc-server key")
+		}
+		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeTuner]; !ok {
+			return errWrongJobMode
+		}
+	}
+	return nil
 }
 
 // satisfiedExpectations returns true if the required adds/dels for the given mxjob have been observed.

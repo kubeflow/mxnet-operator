@@ -182,18 +182,18 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Format:      "",
 							},
 						},
-						"schedulerName": {
-							SchemaProps: spec.SchemaProps{
-								Description: "SchedulerName specifies the name of scheduler which should handle the MXJob.",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
 						"ttlSecondsAfterFinished": {
 							SchemaProps: spec.SchemaProps{
 								Description: "TTLSecondsAfterFinished is the TTL to clean up mxnet-jobs (temporary before kubernetes adds the cleanup controller). It may take extra ReconcilePeriod seconds for the cleanup, since reconcile gets called periodically. Default to infinite.",
 								Type:        []string{"integer"},
 								Format:      "int32",
+							},
+						},
+						"jobMode": {
+							SchemaProps: spec.SchemaProps{
+								Description: "JobMode specify the kind of MXjob to do. Different may have different MXReplicaSpecs request",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"mxReplicaSpecs": {
@@ -203,14 +203,21 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								AdditionalProperties: &spec.SchemaOrBool{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2.MXReplicaSpec"),
+											Type: []string{"array"},
+											Items: &spec.SchemaOrArray{
+												Schema: &spec.Schema{
+													SchemaProps: spec.SchemaProps{
+														Ref: ref("github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2.MXReplicaSpec"),
+													},
+												},
+											},
 										},
 									},
 								},
 							},
 						},
 					},
-					Required: []string{"mxReplicaSpecs"},
+					Required: []string{"jobMode", "mxReplicaSpecs"},
 				},
 			},
 			Dependencies: []string{
@@ -277,6 +284,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				SchemaProps: spec.SchemaProps{
 					Description: "MXReplicaSpec is a description of the MXReplica",
 					Properties: map[string]spec.Schema{
+						"label": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Label make MXReplicaSpec members which have same MXReplicaType can be differentiated from each other. Otherwise one of them will be saw as a replica of the other. It makes MXReplicaSpec members with same MXReplicaType can work at the same time, e.g. you can start more than one TuningServer",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
 						"replicas": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Replicas is the desired number of replicas of the given template. If unspecified, defaults to 1.",
