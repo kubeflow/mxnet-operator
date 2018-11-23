@@ -12,18 +12,18 @@ spec:
         spec:
           containers:
           - name: mxnet
-            image: kingonthestar/auto-tuning:2.0
+            image: mxjob/auto-tuning:gpu
             command: ["python3"]
             args: ["/home/start-job.py"]
     TunerServer:
-      label: gpu1
+      label: 2080ti
       replicas: 1
       restartPolicy: Never
       template:
         spec:
           containers:
           - name: mxnet
-            image: kingonthestar/auto-tuning:2.0
+            image: mxjob/auto-tuning:gpu
             command: ["python3"]
             args: ["/home/start-job.py"]
             resources:
@@ -36,6 +36,6 @@ spec:
         spec:
           containers:
           - name: mxnet
-            image: kingonthestar/auto-tuning:2.0
+            image: mxjob/auto-tuning:gpu
             command: ["python3"]
             args: ["/home/start-job.py"]
