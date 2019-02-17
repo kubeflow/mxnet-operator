@@ -298,6 +298,77 @@ server-76no-0
 server-76no-1
 ```
 
+##Tvm auto tuning
+If your mxnet operator version is kubeflow.org/v1alpha2, you can use its auto tuning framework. 
+You can find example in examples/mxnet-operator.v2/tune/mx_job_tune_gpu.yaml.
+But there is some preparatory work need to be finished first.
+
+
+To let tvm tune your network, you should create a docker image which has tvm module. You can reference the docker file 
+in examples/mxnet-operator.v2/tune which install mxnet and tvm automatically. If you want to know more information about
+tvm installation, please reference https://docs.tvm.ai/tutorials/
+
+
+Next, you need a auto-tuning script to specify which network will be tuned and set the auto-tuning parameters, 
+You can reference examples/mxnet-operator.v2/tune/auto-tuning.py to get some help, this script define a mxnet neetwork 
+and then run the auto-tuning module. For more details, please see 
+https://docs.tvm.ai/tutorials/autotvm/tune_relay_mobile_gpu.html#sphx-glr-tutorials-autotvm-tune-relay-mobile-gpu-py
+
+
+Last, you need a startup script to start the auto tuning. In fact, mxnet-operator will set all the parameters 
+as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning 
+script. You can reference examples/mxnet-operator.v2/tune/start-job.py
+
+
+If you are not familiar to tvm, a good solution is replace the network defined in 
+examples/mxnet-operator.v2/tune/auto-tuning.py to yours. Tuning result will be save in a log file like resnet-18.log in 
+the example we gave.
+
+```yaml
+apiVersion: "kubeflow.org/v1alpha2"
+kind: "MXJob"
+metadata:
+  name: "auto-tuning-job"
+spec:
+  jobMode: MXTune
+  mxReplicaSpecs:
+    TunerTracker:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+          - name: mxnet
+            image: mxjob/auto-tuning:gpu
+            command: ["python3"]
+            args: ["/home/start-job.py"]
+    TunerServer:
+      label: 2080ti
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+          - name: mxnet
+            image: mxjob/auto-tuning:gpu
+            command: ["python3"]
+            args: ["/home/start-job.py"]
+            resources:
+              limits:
+                nvidia.com/gpu: 1
+    Tuner:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        spec:
+          containers:
+          - name: mxnet
+            image: mxjob/auto-tuning:gpu
+            command: ["python3"]
+            args: ["/home/start-job.py"]
+```
+
+
 ## Contributing
 
 Please refer to the [developer_guide](https://github.com/kubeflow/tf-operator/blob/master/developer_guide.md)
