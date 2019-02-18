@@ -298,7 +298,8 @@ server-76no-0
 server-76no-1
 ```
 
-##Tvm auto tuning
+## Tvm auto tuning
+
 If your mxnet operator version is kubeflow.org/v1alpha2, you can use its auto tuning framework. 
 You can find auto-tuning example in examples/mxnet-operator.v2/tune/mx_job_tune_gpu.yaml:
 
