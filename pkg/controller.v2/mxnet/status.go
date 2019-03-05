@@ -77,7 +77,7 @@ const (
 			}
 		}
 	} else {
-		if rtype == mxv1alpha2.MXReplicaTypeWorker {
+		if rtype == mxv1alpha2.MXReplicaTypeWorker || rtype == mxv1alpha2.MXReplicaTypeTuner {
 			// All workers are succeeded or scheduler completed, leave a succeeded condition.
 			if expected == 0 || schedulerCompleted {
 				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
