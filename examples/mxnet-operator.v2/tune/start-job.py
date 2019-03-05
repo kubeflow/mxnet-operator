@@ -30,7 +30,7 @@ if __name__ == '__main__':
         time.sleep(5)
         addr = cluster_config["tunertracker"][0]
         label = labels_config["tunerserver"]
-        command = "python3 /home/auto-tuning.py --tracker {0} --tracker_port {1} --server_key {2}".format(addr.get('url'), addr.get('port'), label)
+        command = "python3 /home/scripts/auto-tuning.py --tracker {0} --tracker_port {1} --server_key {2}".format(addr.get('url'), addr.get('port'), label)
         print("DO: " + command)
         os.system(command)
     else:
