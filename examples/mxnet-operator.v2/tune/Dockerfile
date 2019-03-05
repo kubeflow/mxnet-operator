@@ -1,7 +1,7 @@
 FROM nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04
 
 # Download usefull tools and mxnet, tvm
-WORKDIR /home
+WORKDIR /home/scripts
 RUN apt-get update && apt-get install -y git vim cmake wget sed && \
     git clone --recursive https://github.com/dmlc/tvm && \
     git clone --recursive https://github.com/apache/incubator-mxnet mxnet
@@ -56,3 +56,6 @@ RUN cd tvm && \
 # COPY custom code to container
 COPY start-job.py .
 COPY auto-tuning.py .
+
+# Change working path
+WORKDIR /home/log
