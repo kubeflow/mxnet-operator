@@ -8,7 +8,7 @@ run distributed or non-distributed MXNet jobs on Kubernetes.
 Using a Custom Resource Definition (CRD) gives users the ability to create and manage MX Jobs just like builtin K8s resources. For example to create a job
 
 ```
-kubectl create -f examples/mx_job_dist.yaml 
+kubectl create -f examples/mxnet-operator/mx_job_dist.yaml 
 ```
 
 To list jobs
@@ -94,7 +94,7 @@ ks apply ${ENVIRONMENT} -c mxnet-operator
 You create a job by defining a MXJob and then creating it with.
 
 ```
-kubectl create -f examples/mx_job_dist.yaml 
+kubectl create -f examples/mxnet-operator/mx_job_dist.yaml 
 ```
 
 Each replicaSpec defines a set of MXNet processes.
