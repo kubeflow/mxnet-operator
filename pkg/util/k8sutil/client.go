@@ -80,4 +80,3 @@ func (c *CRDRestClient) Update(obj *metav1unstructured.Unstructured, plural stri
 	}
 	return err
 }
-
