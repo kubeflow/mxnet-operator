@@ -1,22 +1,22 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: mx-job-operator
+  name: mxnet-operator
   labels:
-    name: mx-job-operator
+    name: mxnet-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: mx-job-operator
+      name: mxnet-operator
   template:
     metadata:
       labels:
-        name: mx-job-operator
+        name: mxnet-operator
     spec:
       containers:
-      - name: mx-job-operator
-        image: mxjob/mxnet-operator:v2-test-4
+      - name: mxnet-operator
+        image: mxjob/mxnet-operator:v1beta1
         imagePullPolicy: Always
         env:
         - name: MY_POD_NAMESPACE
