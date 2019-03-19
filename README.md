@@ -3,65 +3,21 @@
 ## Overview
 
 MXJob provides a Kubernetes custom resource that makes it easy to
-run distributed or non-distributed MXNet jobs on Kubernetes.
+run distributed or non-distributed MXNet jobs (training and tuning) on Kubernetes. 
+Using a Custom Resource Definition (CRD) gives users the ability to create 
+and manage MX Jobs just like builtin K8S resources. 
 
-Using a Custom Resource Definition (CRD) gives users the ability to create and manage MX Jobs just like builtin K8s resources. For example to create a job
+### Prerequisites
 
-```
-kubectl create -f examples/mxnet-operator/mx_job_dist.yaml 
-```
-
-To list jobs
-
-```bash
-kubectl get mxjobs
-
-NAME          CREATED AT
-example-dist-job   3m
-```
-
-### Requirements
-
-kubelet : v1.11.1
-
-kubeadm : v1.11.1
-
-Docker： 
-```
-Client:
- Version:      17.03.2-ce
- API version:  1.27
- Go version:   go1.6.2
- Git commit:   f5ec1e2
- Built:        Thu Jul  5 23:07:48 2018
- OS/Arch:      linux/amd64
-
-Server:
- Version:      17.03.2-ce
- API version:  1.27 (minimum version 1.12)
- Go version:   go1.6.2
- Git commit:   f5ec1e2
- Built:        Thu Jul  5 23:07:48 2018
- OS/Arch:      linux/amd64
- Experimental: false
-```
-
-kubectl :
-
-```
-Client Version: version.Info{Major:"1", Minor:"11", GitVersion:"v1.11.1", GitCommit:"b1b29978270dc22fecc592ac55d903350454310a", GitTreeState:"clean", BuildDate:"2018-07-17T18:53:20Z", GoVersion:"go1.10.3", Compiler:"gc", Platform:"linux/amd64"}
-Server Version: version.Info{Major:"1", Minor:"10", GitVersion:"v1.10.5", GitCommit:"32ac1c9073b132b8ba18aa830f46b77dcceb0723", GitTreeState:"clean", BuildDate:"2018-06-21T11:34:22Z", GoVersion:"go1.9.3", Compiler:"gc", Platform:"linux/amd64"}
-```
-
-kubernetes : branch release-1.11
-
-incubator-mxnet : v1.2.0
+- Kubernetes >= 1.8
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
+- MXNet >= v1.2.0
 
 ## Installing the MXJob CRD and operator on your k8s cluster
 
 ### Deploy Kubeflow
 
-mxnet-operator has been contributed to kubeflow , please refer to the [kubeflow installation](https://www.kubeflow.org/docs/started/getting-started/) first .
+Please refer to the [kubeflow installation](https://www.kubeflow.org/docs/started/getting-started/).
 
 ### Verify that MXNet support is included in your Kubeflow deployment
 
@@ -76,7 +32,7 @@ The output should include `mxjobs.kubeflow.org`
 ```
 NAME                                           AGE
 ...
-mxjobs.kubeflow.org                       4d
+mxjobs.kubeflow.org                            4d
 ...
 ```
 
@@ -89,12 +45,12 @@ ks generate mxnet-operator mxnet-operator
 ks apply ${ENVIRONMENT} -c mxnet-operator
 ```
 
-### Creating a job
+### Creating a MXNet training job
 
-You create a job by defining a MXJob and then creating it with.
+You create a training job by defining a MXJob with MXTrain mode and then creating it with.
 
 ```
-kubectl create -f examples/mxnet-operator/mx_job_dist.yaml 
+kubectl create -f examples/v1beta1/train/mx_job_dist_gpu.yaml
 ```
 
 Each replicaSpec defines a set of MXNet processes.
@@ -131,16 +87,27 @@ The semantics are as follows
   * parameter servers are automatically restarted if they exit
 
 
-For each replica you define a **template** which is a K8s
+For each replica you define a **template** which is a K8S
 [PodTemplateSpec](https://kubernetes.io/docs/api-reference/v1.8/#podtemplatespec-v1-core).
 The template allows you to specify the containers, volumes, etc... that
 should be created for each replica.
 
+### Create a MXNet tuning job (AutoTVM)
+
+[TVM](https://docs.tvm.ai/tutorials/) is a end to end deep learning compiler stack, you can easily run AutoTVM with mxnet-operator. 
+You can create a auto tuning job by define a type of MXTune job and then creating it with
+
+```
+kubectl create -f examples/v1beta1/tune/mx_job_tune_gpu.yaml
+```
+
+Before you use the auto-tuning example, there is some preparatory work need to be finished in advance. To let TVM tune your network, you should create a docker image which has TVM module. Then, you need a auto-tuning script to specify which network will be tuned and set the auto-tuning parameters, For more details, please see https://docs.tvm.ai/tutorials/autotvm/tune_relay_mobile_gpu.html#sphx-glr-tutorials-autotvm-tune-relay-mobile-gpu-py. Finally, you need a startup script to start the auto-tuning program. In fact, mxnet-operator will set all the parameters as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning script. We provide an example under examples/v1beta1/tune/, tuning result will be saved in a log file like resnet-18.log in the example we gave. You can refer it for details.
+
 ### Using GPUs
 
-Mxnet-operator is now supporting the gpu training .
+Mxnet-operator is now supporting the GPU training .
 
-Please verify your image is available for gpu distributed training .
+Please verify your image is available for GPU distributed training .
 
 For example ,
 
@@ -152,9 +119,9 @@ resources:
     nvidia.com/gpu: 1
 ```
 
-Mxnet-operator will arrange the pod to nodes which satisfied the gpu limit .
+Mxnet-operator will arrange the pod to nodes which satisfied the GPU limit.
 
-## Monitoring your job
+### Monitoring your MXNet job
 
 To get the status of your job
 
@@ -165,106 +132,109 @@ kubectl get -o yaml mxjobs $JOB
 Here is sample output for an example job
 
 ```yaml
-apiVersion: kubeflow.org/v1alpha1
+apiVersion: kubeflow.org/v1beta1
 kind: MXJob
 metadata:
-  clusterName: ""
-  creationTimestamp: 2018-08-10T07:13:39Z
+  creationTimestamp: 2019-03-19T09:24:27Z
   generation: 1
-  name: example-dist-job
+  name: mxnet-job
   namespace: default
-  resourceVersion: "491499"
-  selfLink: /apis/kubeflow.org/v1alpha1/namespaces/default/mxjobs/example-dist-job
-  uid: e800b1ed-9c6c-11e8-962f-704d7b2c0a63
+  resourceVersion: "3681685"
+  selfLink: /apis/kubeflow.org/v1beta1/namespaces/default/mxjobs/mxnet-job
+  uid: cb11013b-4a28-11e9-b7f4-704d7bb59f71
 spec:
-  RuntimeId: aycw
-  jobMode: dist
-  mxImage: mxjob/mxnet:gpu
-  replicaSpecs:
-  - PsRootPort: 9000
-    mxReplicaType: SCHEDULER
-    replicas: 1
-    template:
-      metadata:
-        creationTimestamp: null
-      spec:
-        containers:
-        - args:
-          - train_mnist.py
-          command:
-          - python
-          image: mxjob/mxnet:gpu
-          name: mxnet
-          resources: {}
-          workingDir: /incubator-mxnet/example/image-classification
-        restartPolicy: OnFailure
-  - PsRootPort: 9091
-    mxReplicaType: SERVER
-    replicas: 1
-    template:
-      metadata:
-        creationTimestamp: null
-      spec:
-        containers:
-        - args:
-          - train_mnist.py
-          command:
-          - python
-          image: mxjob/mxnet:gpu
-          name: mxnet
-          resources: {}
-          workingDir: /incubator-mxnet/example/image-classification
-        restartPolicy: OnFailure
-  - PsRootPort: 9091
-    mxReplicaType: WORKER
-    replicas: 1
-    template:
-      metadata:
-        creationTimestamp: null
-      spec:
-        containers:
-        - args:
-          - train_mnist.py
-          - --num-epochs=10
-          - --num-layers=2
-          - --kv-store=dist_device_sync
-          command:
-          - python
-          image: mxjob/mxnet:gpu
-          name: mxnet
-          resources: {}
-          workingDir: /incubator-mxnet/example/image-classification
-        restartPolicy: OnFailure
-  terminationPolicy:
-    chief:
-      replicaIndex: 0
-      replicaName: SCHEDULER
+  cleanPodPolicy: All
+  jobMode: MXTrain
+  mxReplicaSpecs:
+    Scheduler:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - image: mxjob/mxnet:gpu
+            name: mxnet
+            ports:
+            - containerPort: 9091
+              name: mxjob-port
+            resources: {}
+    Server:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - image: mxjob/mxnet:gpu
+            name: mxnet
+            ports:
+            - containerPort: 9091
+              name: mxjob-port
+            resources: {}
+    Worker:
+      replicas: 1
+      restartPolicy: Never
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - args:
+            - /incubator-mxnet/example/image-classification/train_mnist.py
+            - --num-epochs
+            - "10"
+            - --num-layers
+            - "2"
+            - --kv-store
+            - dist_device_sync
+            - --gpus
+            - "0"
+            command:
+            - python
+            image: mxjob/mxnet:gpu
+            name: mxnet
+            ports:
+            - containerPort: 9091
+              name: mxjob-port
+            resources:
+              limits:
+                nvidia.com/gpu: "1"
 status:
-  phase: Running
-  reason: ""
-  replicaStatuses:
-  - ReplicasStates:
-      Running: 1
-    mx_replica_type: SCHEDULER
-    state: Running
-  - ReplicasStates:
-      Running: 1
-    mx_replica_type: SERVER
-    state: Running
-  - ReplicasStates:
-      Running: 1
-    mx_replica_type: WORKER
-    state: Running
-  state: Running
-
-
+  completionTime: 2019-03-19T09:25:11Z
+  conditions:
+  - lastTransitionTime: 2019-03-19T09:24:27Z
+    lastUpdateTime: 2019-03-19T09:24:27Z
+    message: MXJob mxnet-job is created.
+    reason: MXJobCreated
+    status: "True"
+    type: Created
+  - lastTransitionTime: 2019-03-19T09:24:27Z
+    lastUpdateTime: 2019-03-19T09:24:29Z
+    message: MXJob mxnet-job is running.
+    reason: MXJobRunning
+    status: "False"
+    type: Running
+  - lastTransitionTime: 2019-03-19T09:24:27Z
+    lastUpdateTime: 2019-03-19T09:25:11Z
+    message: MXJob mxnet-job is successfully completed.
+    reason: MXJobSucceeded
+    status: "True"
+    type: Succeeded
+  mxReplicaStatuses:
+    Scheduler: {}
+    Server: {}
+    Worker: {}
+  startTime: 2019-03-19T09:24:29Z
 ```
 
 The first thing to note is the **RuntimeId**. This is a random unique
 string which is used to give names to all the K8s resouces
 (e.g Job controllers & services) that are created by the MXJob.
 
-As with other K8s resources status provides information about the state
+As with other K8S resources status provides information about the state
 of the resource.
 
 **phase** - Indicates the phase of a job and will be one of
@@ -297,79 +267,6 @@ will create the jobs
 server-76no-0
 server-76no-1
 ```
-
-## Tvm auto tuning
-
-If your mxnet operator version is kubeflow.org/v1alpha2, you can use its auto tuning framework. 
-You can find auto-tuning example in examples/mxnet-operator.v2/tune/mx_job_tune_gpu.yaml:
-
-```yaml
-apiVersion: "kubeflow.org/v1alpha2"
-kind: "MXJob"
-metadata:
-  name: "auto-tuning-job"
-spec:
-  jobMode: MXTune
-  mxReplicaSpecs:
-    TunerTracker:
-      replicas: 1
-      restartPolicy: Never
-      template:
-        spec:
-          containers:
-          - name: mxnet
-            image: mxjob/auto-tuning:gpu
-            command: ["python3"]
-            args: ["/home/start-job.py"]
-    TunerServer:
-      label: 2080ti
-      replicas: 1
-      restartPolicy: Never
-      template:
-        spec:
-          containers:
-          - name: mxnet
-            image: mxjob/auto-tuning:gpu
-            command: ["python3"]
-            args: ["/home/start-job.py"]
-            resources:
-              limits:
-                nvidia.com/gpu: 1
-    Tuner:
-      replicas: 1
-      restartPolicy: Never
-      template:
-        spec:
-          containers:
-          - name: mxnet
-            image: mxjob/auto-tuning:gpu
-            command: ["python3"]
-            args: ["/home/start-job.py"]
-```
-
-However, before you use the auto-tuning example, there is some preparatory work need to be finished first.
-
-
-To let tvm tune your network, you should create a docker image which has tvm module. You can reference the docker file 
-in examples/mxnet-operator.v2/tune which install mxnet and tvm automatically. If you want to know more information about
-tvm installation, please reference https://docs.tvm.ai/tutorials/
-
-
-Next, you need a auto-tuning script to specify which network will be tuned and set the auto-tuning parameters, 
-You can reference examples/mxnet-operator.v2/tune/auto-tuning.py to get some help, this script define a mxnet network 
-and then run the auto-tuning module. For more details, please see 
-https://docs.tvm.ai/tutorials/autotvm/tune_relay_mobile_gpu.html#sphx-glr-tutorials-autotvm-tune-relay-mobile-gpu-py
-
-
-Last, you need a startup script to start the auto tuning. In fact, mxnet-operator will set all the parameters 
-as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning 
-script. You can reference examples/mxnet-operator.v2/tune/start-job.py
-
-
-If you are not familiar to tvm, a good solution is replacing the network defined in 
-examples/mxnet-operator.v2/tune/auto-tuning.py to yours. Tuning result will be saved in a log file like resnet-18.log in 
-the example we gave.
-
 
 ## Contributing
 
