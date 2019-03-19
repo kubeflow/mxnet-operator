@@ -17,19 +17,19 @@ package validation
 import (
 	"testing"
 
-	mxv2 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1alpha2"
+	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 
 	"k8s.io/api/core/v1"
 )
 
 func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
-	testCases := []mxv2.MXJobSpec{
+	testCases := []mxv1beta1.MXJobSpec{
 		{
 			MXReplicaSpecs: nil,
 		},
 		{
-			MXReplicaSpecs: map[mxv2.MXReplicaType]*mxv2.MXReplicaSpec{
-				mxv2.MXReplicaTypeWorker: &mxv2.MXReplicaSpec{
+			MXReplicaSpecs: map[mxv1beta1.MXReplicaType]*mxv1beta1.MXReplicaSpec{
+				mxv1beta1.MXReplicaTypeWorker: &mxv1beta1.MXReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{},
@@ -39,8 +39,8 @@ func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MXReplicaSpecs: map[mxv2.MXReplicaType]*mxv2.MXReplicaSpec{
-				mxv2.MXReplicaTypeWorker: &mxv2.MXReplicaSpec{
+			MXReplicaSpecs: map[mxv1beta1.MXReplicaType]*mxv1beta1.MXReplicaSpec{
+				mxv1beta1.MXReplicaTypeWorker: &mxv1beta1.MXReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -54,8 +54,8 @@ func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MXReplicaSpecs: map[mxv2.MXReplicaType]*mxv2.MXReplicaSpec{
-				mxv2.MXReplicaTypeWorker: &mxv2.MXReplicaSpec{
+			MXReplicaSpecs: map[mxv1beta1.MXReplicaType]*mxv1beta1.MXReplicaSpec{
+				mxv1beta1.MXReplicaTypeWorker: &mxv1beta1.MXReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -70,8 +70,8 @@ func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MXReplicaSpecs: map[mxv2.MXReplicaType]*mxv2.MXReplicaSpec{
-				mxv2.MXReplicaTypeScheduler: &mxv2.MXReplicaSpec{
+			MXReplicaSpecs: map[mxv1beta1.MXReplicaType]*mxv1beta1.MXReplicaSpec{
+				mxv1beta1.MXReplicaTypeScheduler: &mxv1beta1.MXReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{},
@@ -82,7 +82,7 @@ func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
 		},
 	}
 	for _, c := range testCases {
-		err := ValidateAlphaTwoMXJobSpec(&c)
+		err := ValidateBetaOneMXJobSpec(&c)
 		if err.Error() != "MXJobSpec is not valid" {
 			t.Error("Failed validate the alpha2.MXJobSpec")
 		}
