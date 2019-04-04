@@ -42,7 +42,15 @@ If it is not included you can add it as follows
 cd ${KSONNET_APP}
 ks pkg install kubeflow/mxnet-job
 ks generate mxnet-operator mxnet-operator
-ks apply ${ENVIRONMENT} -c mxnet-operator
+ks apply default -c mxnet-operator
+```
+
+As an alternative solution, you can deploy mxnet-operator bypass ksonnect
+
+```
+kubectl create -f manifests/crd-v1beta1.yaml 
+kubectl create -f manifests/rbac.yaml 
+kubectl create -f manifests/deployment.yaml
 ```
 
 ### Creating a MXNet training job
@@ -92,7 +100,7 @@ For each replica you define a **template** which is a K8S
 The template allows you to specify the containers, volumes, etc... that
 should be created for each replica.
 
-### Create a MXNet tuning job (AutoTVM)
+### Creating a TVM tuning job (AutoTVM)
 
 [TVM](https://docs.tvm.ai/tutorials/) is a end to end deep learning compiler stack, you can easily run AutoTVM with mxnet-operator. 
 You can create a auto tuning job by define a type of MXTune job and then creating it with
