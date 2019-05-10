@@ -5,9 +5,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	restclientset "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -33,17 +33,14 @@ var (
 )
 
 func NewUnstructuredMXJobInformer(restConfig *restclientset.Config, namespace string) mxjobinformersv1beta1.MXJobInformer {
-	dynClientPool := dynamic.NewDynamicClientPool(restConfig)
-	dclient, err := dynClientPool.ClientForGroupVersionKind(mxv1beta1.SchemeGroupVersionKind)
+	dclient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		panic(err)
 	}
-	resource := &metav1.APIResource{
-		Name:         mxv1beta1.Plural,
-		SingularName: mxv1beta1.Singular,
-		Namespaced:   true,
-		Group:        mxv1beta1.GroupName,
-		Version:      mxv1beta1.GroupVersion,
+	resource := schema.GroupVersionResource{
+		Group:    mxv1beta1.GroupName,
+		Version:  mxv1beta1.GroupVersion,
+		Resource: mxv1beta1.Plural,
 	}
 	informer := unstructured.NewMXJobInformer(
 		resource,
