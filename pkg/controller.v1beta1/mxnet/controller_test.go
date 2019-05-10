@@ -21,22 +21,23 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/api/policy/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
 	kubeclientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/controller"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/kubeflow/tf-operator/pkg/control"
+
 	"github.com/kubeflow/mxnet-operator/cmd/mxnet-operator.v1beta1/app/options"
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
-	"github.com/kubeflow/mxnet-operator/pkg/control"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1beta1/testutil"
-	"k8s.io/api/policy/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 var (
@@ -68,14 +69,14 @@ func newMXController(
 func TestNormalPath(t *testing.T) {
 	testCases := map[string]struct {
 		scheduler int
-		worker int
-		server int
+		worker    int
+		server    int
 
 		// pod setup
 		ControllerError error
 		jobKeyForget    bool
 
-        pendingSchedulerPods   int32
+		pendingSchedulerPods   int32
 		activeSchedulerPods    int32
 		succeededSchedulerPods int32
 		failedSchedulerPods    int32
@@ -120,12 +121,12 @@ func TestNormalPath(t *testing.T) {
 		"Distributed TFJob (1 scheduler, 4 workers, 2 servers) is created": {
 			1, 4, 2,
 			nil, true,
-			0, 0, 0, 0,			
+			0, 0, 0, 0,
 			0, 0, 0, 0,
 			0, 0, 0, 0,
 			0, 0, 0,
 			7, 0, 7,
-			0, 0, 0,			
+			0, 0, 0,
 			0, 0, 0,
 			0, 0, 0,
 			nil, "",
@@ -134,7 +135,7 @@ func TestNormalPath(t *testing.T) {
 		"Distributed MXJob (1 scheduler, 4 workers, 2 servers) is created and all replicas are pending": {
 			1, 4, 2,
 			nil, true,
-			1, 0, 0, 0,			
+			1, 0, 0, 0,
 			4, 0, 0, 0,
 			2, 0, 0, 0,
 			1, 4, 2,
@@ -148,7 +149,7 @@ func TestNormalPath(t *testing.T) {
 		"Distributed MXJob (1 scheduler, 4 workers, 2 servers) is created and all replicas are running": {
 			1, 4, 2,
 			nil, true,
-			0, 1, 0, 0,			
+			0, 1, 0, 0,
 			0, 4, 0, 0,
 			0, 2, 0, 0,
 			1, 4, 2,
@@ -167,7 +168,7 @@ func TestNormalPath(t *testing.T) {
 			1, 0, 0, 0,
 			1, 2, 1,
 			3, 0, 3,
-			0, 0, 0,			
+			0, 0, 0,
 			0, 0, 0,
 			0, 0, 0,
 			nil, "",
@@ -176,12 +177,12 @@ func TestNormalPath(t *testing.T) {
 		"Distributed MXJob (1 scheduler, 4 workers, 2 servers) is succeeded": {
 			1, 4, 2,
 			nil, true,
-                        0, 0, 1, 0,
+			0, 0, 1, 0,
 			0, 0, 4, 0,
 			0, 0, 2, 0,
 			1, 4, 2,
 			0, 0, 0,
-                        0, 1, 0,
+			0, 1, 0,
 			0, 4, 0,
 			0, 2, 0,
 			&mxJobSucceeded, mxJobSucceededReason,
@@ -201,7 +202,7 @@ func TestNormalPath(t *testing.T) {
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
-				GroupVersion: &mxv1alpha2.SchemeGroupVersion,
+				GroupVersion: &mxv1beta1.SchemeGroupVersion,
 			},
 		}
 		option := options.ServerOption{}
@@ -230,7 +231,7 @@ func TestNormalPath(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-        testutil.SetPodsStatuses(podIndexer, mxJob, testutil.LabelScheduler, tc.pendingSchedulerPods, tc.activeSchedulerPods, tc.succeededSchedulerPods, tc.failedSchedulerPods, t)
+		testutil.SetPodsStatuses(podIndexer, mxJob, testutil.LabelScheduler, tc.pendingSchedulerPods, tc.activeSchedulerPods, tc.succeededSchedulerPods, tc.failedSchedulerPods, t)
 		testutil.SetPodsStatuses(podIndexer, mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
 		testutil.SetPodsStatuses(podIndexer, mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, t)
 
@@ -287,40 +288,40 @@ func TestNormalPath(t *testing.T) {
 				t.Errorf("controllerRef.Controller is not set to true")
 			}
 		}
-                // Validate scheduler status.
+		// Validate scheduler status.
 		if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler] != nil {
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler].Active != tc.expectedActiveSchedulerPods {
-				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveSchedulerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeScheduler].Active)
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveSchedulerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler].Active)
 			}
-			if actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeScheduler].Succeeded != tc.expectedSucceededSchedulerPods {
-				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededSchedulerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeScheduler].Succeeded)
+			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler].Succeeded != tc.expectedSucceededSchedulerPods {
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededSchedulerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler].Succeeded)
 			}
-			if actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeScheduler].Failed != tc.expectedFailedSchedulerPods {
-				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedSchedulerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeScheduler].Failed)
+			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler].Failed != tc.expectedFailedSchedulerPods {
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedSchedulerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeScheduler].Failed)
 			}
 		}
 		// Validate worker status.
 		if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker] != nil {
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker].Active != tc.expectedActiveWorkerPods {
-				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveWorkerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeWorker].Active)
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveWorkerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker].Active)
 			}
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker].Succeeded != tc.expectedSucceededWorkerPods {
-				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededWorkerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeWorker].Succeeded)
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededWorkerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker].Succeeded)
 			}
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker].Failed != tc.expectedFailedWorkerPods {
-				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedWorkerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeWorker].Failed)
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedWorkerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeWorker].Failed)
 			}
 		}
 		// Validate Server status.
 		if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer] != nil {
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer].Active != tc.expectedActiveServerPods {
-				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveServerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeServer].Active)
+				t.Errorf("%s: unexpected number of active pods.  Expected %d, saw %d\n", name, tc.expectedActiveServerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer].Active)
 			}
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer].Succeeded != tc.expectedSucceededServerPods {
-				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededServerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeServer].Succeeded)
+				t.Errorf("%s: unexpected number of succeeded pods.  Expected %d, saw %d\n", name, tc.expectedSucceededServerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer].Succeeded)
 			}
 			if actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer].Failed != tc.expectedFailedServerPods {
-				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedServerPods, actual.Status.MXReplicaStatuses[mxv1alpha2.MXReplicaTypeServer].Failed)
+				t.Errorf("%s: unexpected number of failed pods.  Expected %d, saw %d\n", name, tc.expectedFailedServerPods, actual.Status.MXReplicaStatuses[mxv1beta1.MXReplicaTypeServer].Failed)
 			}
 		}
 		// Validate StartTime.
@@ -346,7 +347,7 @@ func TestRun(t *testing.T) {
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
-			GroupVersion: &mxv1alpha2.SchemeGroupVersion,
+			GroupVersion: &mxv1beta1.SchemeGroupVersion,
 		},
 	}
 	mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
