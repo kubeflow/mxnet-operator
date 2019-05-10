@@ -15,7 +15,6 @@
 package mxnet
 
 import (
-	"github.com/kubeflow/tf-operator/pkg/control"
 	"testing"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1beta1/testutil"
+	"github.com/kubeflow/tf-operator/pkg/control"
 )
 
 func TestAddMXJob(t *testing.T) {
@@ -191,8 +191,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 		failedServerPods    int32
 
 		activeSchedulerServices int32
-		activeWorkerServices int32
-		activeServerServices     int32
+		activeWorkerServices    int32
+		activeServerServices    int32
 
 		expectedPodDeletions int
 	}
@@ -202,10 +202,10 @@ func TestDeletePodsAndServices(t *testing.T) {
 			description: "1 scheduler , 4 workers and 2 server is running, policy is all",
 			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1beta1.CleanPodPolicyAll),
 
-		    pendingSchedulerPods:  0,
-		    activeSchedulerPods:   1,
-		    succeededSchedulerPods:0,
-		    failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    1,
+			succeededSchedulerPods: 0,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
@@ -218,8 +218,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedPodDeletions: 7,
 		},
@@ -227,10 +227,10 @@ func TestDeletePodsAndServices(t *testing.T) {
 			description: "1 scheduler, 4 workers and 2 servers is running, policy is running",
 			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1beta1.CleanPodPolicyRunning),
 
-		    pendingSchedulerPods:  0,
-		    activeSchedulerPods:   1,
-		    succeededSchedulerPods:0,
-		    failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    1,
+			succeededSchedulerPods: 0,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
@@ -243,8 +243,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedPodDeletions: 7,
 		},
@@ -252,10 +252,10 @@ func TestDeletePodsAndServices(t *testing.T) {
 			description: "1 scheduler, 4 workers and 2 servers is succeeded, policy is running",
 			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1beta1.CleanPodPolicyRunning),
 
-		    pendingSchedulerPods:  0,
-		    activeSchedulerPods:   0,
-		    succeededSchedulerPods:1,
-		    failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    0,
+			succeededSchedulerPods: 1,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    0,
@@ -268,8 +268,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedPodDeletions: 0,
 		},
@@ -277,10 +277,10 @@ func TestDeletePodsAndServices(t *testing.T) {
 			description: "1 scheduler, 4 workers and 2 servers is succeeded, policy is None",
 			mxJob:       testutil.NewMXJobWithCleanPolicy(1, 4, 2, mxv1beta1.CleanPodPolicyNone),
 
-		    pendingSchedulerPods:  0,
-		    activeSchedulerPods:   0,
-		    succeededSchedulerPods:1,
-		    failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    0,
+			succeededSchedulerPods: 1,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    0,
@@ -293,8 +293,8 @@ func TestDeletePodsAndServices(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedPodDeletions: 0,
 		},
@@ -392,8 +392,8 @@ func TestCleanupMXJob(t *testing.T) {
 		failedServerPods    int32
 
 		activeSchedulerServices int32
-		activeWorkerServices int32
-		activeServerServices     int32
+		activeWorkerServices    int32
+		activeServerServices    int32
 
 		expectedDeleteFinished bool
 	}
@@ -407,10 +407,10 @@ func TestCleanupMXJob(t *testing.T) {
 			description: "1 scheduler , 4 workers and 2 server is running, TTLSecondsAfterFinished unset",
 			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, nil),
 
-			pendingSchedulerPods:  0,
-			activeSchedulerPods:   1,
-			succeededSchedulerPods:0,
-			failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    1,
+			succeededSchedulerPods: 0,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
@@ -423,8 +423,8 @@ func TestCleanupMXJob(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedDeleteFinished: false,
 		},
@@ -432,10 +432,10 @@ func TestCleanupMXJob(t *testing.T) {
 			description: "1 scheduler, 4 workers and 2 servers is running, TTLSecondsAfterFinished is 0",
 			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, ttl0),
 
-			pendingSchedulerPods:  0,
-			activeSchedulerPods:   1,
-			succeededSchedulerPods:0,
-			failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    1,
+			succeededSchedulerPods: 0,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    4,
@@ -448,8 +448,8 @@ func TestCleanupMXJob(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedDeleteFinished: true,
 		},
@@ -457,10 +457,10 @@ func TestCleanupMXJob(t *testing.T) {
 			description: "1 scheduler, 4 workers and 2 servers is succeeded, TTLSecondsAfterFinished is 2",
 			mxJob:       testutil.NewMXJobWithCleanupJobDelay(1, 4, 2, ttl2s),
 
-			pendingSchedulerPods:  0,
-			activeSchedulerPods:   0,
-			succeededSchedulerPods:1,
-			failedSchedulerPods:   0,
+			pendingSchedulerPods:   0,
+			activeSchedulerPods:    0,
+			succeededSchedulerPods: 1,
+			failedSchedulerPods:    0,
 
 			pendingWorkerPods:   0,
 			activeWorkerPods:    0,
@@ -473,8 +473,8 @@ func TestCleanupMXJob(t *testing.T) {
 			failedServerPods:    0,
 
 			activeSchedulerServices: 1,
-			activeWorkerServices: 4,
-			activeServerServices:     2,
+			activeWorkerServices:    4,
+			activeServerServices:    2,
 
 			expectedDeleteFinished: true,
 		},

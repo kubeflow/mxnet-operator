@@ -96,7 +96,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := mxv1beta1.RestartPolicyExitCode
 			mxJob.Spec.MXReplicaSpecs[mxv1beta1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				mxJob: mxJob,
+				mxJob:                 mxJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          mxv1beta1.MXReplicaTypeWorker,
 			}
@@ -106,7 +106,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := mxv1beta1.RestartPolicyNever
 			mxJob.Spec.MXReplicaSpecs[mxv1beta1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				mxJob: mxJob,
+				mxJob:                 mxJob,
 				expectedRestartPolicy: v1.RestartPolicyNever,
 				expectedType:          mxv1beta1.MXReplicaTypeWorker,
 			}
@@ -116,7 +116,7 @@ func TestRestartPolicy(t *testing.T) {
 			specRestartPolicy := mxv1beta1.RestartPolicyAlways
 			mxJob.Spec.MXReplicaSpecs[mxv1beta1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				mxJob: mxJob,
+				mxJob:                 mxJob,
 				expectedRestartPolicy: v1.RestartPolicyAlways,
 				expectedType:          mxv1beta1.MXReplicaTypeWorker,
 			}
@@ -124,9 +124,9 @@ func TestRestartPolicy(t *testing.T) {
 		func() tc {
 			mxJob := testutil.NewMXJob(1, 0)
 			specRestartPolicy := mxv1beta1.RestartPolicyOnFailure
-			mxJob.Spec.MXReplicaSpecs[mxv1alpha2.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
+			mxJob.Spec.MXReplicaSpecs[mxv1beta1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
-				mxJob: mxJob,
+				mxJob:                 mxJob,
 				expectedRestartPolicy: v1.RestartPolicyOnFailure,
 				expectedType:          mxv1beta1.MXReplicaTypeWorker,
 			}
