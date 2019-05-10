@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/mailru/easyjson/jlexer"
 	"github.com/mailru/easyjson/jwriter"
@@ -34,13 +35,14 @@ var DefaultJSONNameProvider = NewNameProvider()
 
 const comma = byte(',')
 
-var closers map[byte]byte
+var atomicClosers atomic.Value
 
 func init() {
-	closers = map[byte]byte{
-		'{': '}',
-		'[': ']',
-	}
+	atomicClosers.Store(
+		map[byte]byte{
+			'{': '}',
+			'[': ']',
+		})
 }
 
 type ejMarshaler interface {
@@ -111,6 +113,7 @@ func ConcatJSON(blobs ...[]byte) []byte {
 	var opening, closing byte
 	var idx, a int
 	buf := bytes.NewBuffer(nil)
+	closers := atomicClosers.Load().(map[byte]byte)
 
 	for i, b := range blobs[:last+1] {
 		if b == nil || bytes.Equal(b, nullJSON) {
@@ -261,7 +264,7 @@ func (n *NameProvider) GetJSONNames(subject interface{}) []string {
 		names = n.makeNameIndex(tpe)
 	}
 
-	res := make([]string, 0, len(names.jsonNames))
+	var res []string
 	for k := range names.jsonNames {
 		res = append(res, k)
 	}
