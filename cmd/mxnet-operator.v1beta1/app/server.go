@@ -38,6 +38,7 @@ import (
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 )
 
 const (
@@ -94,7 +95,7 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Create clients.
-	kubeClientSet, leaderElectionClientSet, mxJobClientSet, err := createClientSets(kcfg)
+	kubeClientSet, leaderElectionClientSet, mxJobClientSet, kubeBatchClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func Run(opt *options.ServerOption) error {
 	unstructuredInformer := controller.NewUnstructuredMXJobInformer(kcfg, opt.Namespace)
 
 	// Create mx controller.
-	tc := controller.NewMXController(unstructuredInformer, kubeClientSet, mxJobClientSet, kubeInformerFactory, mxJobInformerFactory, *opt)
+	tc := controller.NewMXController(unstructuredInformer, kubeClientSet, mxJobClientSet, kubeBatchClientSet, kubeInformerFactory, mxJobInformerFactory, *opt)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
@@ -163,32 +164,37 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
-func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, mxjobclientset.Interface, error) {
+func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, mxjobclientset.Interface, kubebatchclient.Interface, error) {
 
 	crdClient, err := crdclient.NewForConfig(config)
 
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	checkCRDExists(crdClient, v1beta1.MXCRD)
 
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "mxnet-operator"))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	leaderElectionClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "leader-election"))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	mxJobClientSet, err := mxjobclientset.NewForConfig(config)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
-	return kubeClientSet, leaderElectionClientSet, mxJobClientSet, nil
+	kubeBatchClientSet, err := kubebatchclient.NewForConfig(restclientset.AddUserAgent(config, "kube-batch"))
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	return kubeClientSet, leaderElectionClientSet, mxJobClientSet, kubeBatchClientSet, nil
 }
 
 func checkCRDExists(clientset crdclient.Interface, crdName string) {

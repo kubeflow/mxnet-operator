@@ -38,6 +38,7 @@ import (
 	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/kubeflow/v1beta1"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -49,6 +50,7 @@ const (
 	mxReplicaIndexLabel = "mxnet-replica-index"
 	labelGroupName      = "group_name"
 	labelMXJobName      = "mxnet_job_name"
+	labelMXJobRole      = "mxnet-job-role"
 )
 
 var (
@@ -71,6 +73,9 @@ type MXController struct {
 
 	// mxJobClientSet is a clientset for CRD MXJob.
 	mxJobClientSet mxjobclientset.Interface
+
+	//KubeBatchClientSet is a standard kube-batch clientset.
+	KubeBatchClientSet kubebatchclient.Interface
 
 	// To allow injection of sync functions for testing.
 	syncHandler func(string) (bool, error)
@@ -98,6 +103,7 @@ func NewMXController(
 	mxJobInformer mxjobinformersv1beta1.MXJobInformer,
 	kubeClientSet kubeclientset.Interface,
 	mxJobClientSet mxjobclientset.Interface,
+	kubeBatchClientSet kubebatchclient.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	// This field is not used now but we keep it since it will be used
 	// after we support CRD validation.
@@ -110,12 +116,13 @@ func NewMXController(
 	// Create new MXController.
 	tc := &MXController{
 		mxJobClientSet: mxJobClientSet,
+		KubeBatchClientSet:kubeBatchClientSet,
 	}
 
 	// Create base controller
 	log.Info("Creating Job controller")
 	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, kubeInformerFactory, mxv1beta1.Plural)
+		option.EnableGangScheduling, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, mxv1beta1.Plural)
 	tc.JobController = jc
 	// Set sync handler.
 	tc.syncHandler = tc.syncMXJob
@@ -307,9 +314,9 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 
 	if tc.Config.EnableGangScheduling {
 		minAvailableReplicas := getTotalReplicas(mxjob)
-		_, err := tc.SyncPdb(mxjob, minAvailableReplicas)
+		_, err := tc.SyncPodGroup(mxjob, minAvailableReplicas)
 		if err != nil {
-			logger.Warnf("Sync pdb %v: %v", mxjob.Name, err)
+			logger.Warnf("Sync PodGroup %v: %v", mxjob.Name, err)
 		}
 	}
 
@@ -367,13 +374,12 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1beta1.MXJob) error {
 		}
 
 		if tc.Config.EnableGangScheduling {
-			tc.Recorder.Event(mxjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting pdb")
-			if err := tc.DeletePdb(mxjob); err != nil {
-				tc.Recorder.Eventf(mxjob, v1.EventTypeWarning, "FailedDeletePdb", "Error deleting: %v", err)
+			tc.Recorder.Event(mxjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting PodGroup")
+			if err := tc.DeletePodGroup(mxjob); err != nil {
+				tc.Recorder.Eventf(mxjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
 			} else {
-				tc.Recorder.Eventf(mxjob, v1.EventTypeNormal, "SuccessfulDeletePdb", "Deleted pdb: %v", mxjob.Name)
-
+				tc.Recorder.Eventf(mxjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", mxjob.Name)
 			}
 		}
 
@@ -505,4 +511,8 @@ func (tc *MXController) GetReplicaIndexLabelKey() string {
 
 func (tc *MXController) ControllerName() string {
 	return controllerName
+}
+
+func (tc *MXController) GetJobRoleKey() string {
+	return labelMXJobRole
 }
