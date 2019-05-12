@@ -38,6 +38,8 @@ import (
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1beta1/testutil"
+	batchv1alpha1 "github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1"
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 )
 
 var (
@@ -49,6 +51,7 @@ func newMXController(
 	config *rest.Config,
 	kubeClientSet kubeclientset.Interface,
 	mxJobClientSet mxjobclientset.Interface,
+	kubeBatchClientSet kubebatchclient.Interface,
 	resyncPeriod controller.ResyncPeriodFunc,
 	option options.ServerOption,
 ) (
@@ -60,7 +63,7 @@ func newMXController(
 
 	mxJobInformer := NewUnstructuredMXJobInformer(config, metav1.NamespaceAll)
 
-	ctr := NewMXController(mxJobInformer, kubeClientSet, mxJobClientSet, kubeInformerFactory, mxJobInformerFactory, option)
+	ctr := NewMXController(mxJobInformer, kubeClientSet, mxJobClientSet, kubeBatchClientSet, kubeInformerFactory, mxJobInformerFactory, option)
 	ctr.PodControl = &controller.FakePodControl{}
 	ctr.ServiceControl = &control.FakeServiceControl{}
 	return ctr, kubeInformerFactory, mxJobInformerFactory
@@ -199,6 +202,14 @@ func TestNormalPath(t *testing.T) {
 			},
 		},
 		)
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &batchv1alpha1.SchemeGroupVersion,
+			},
+		},
+		)
 		config := &rest.Config{
 			Host: "",
 			ContentConfig: rest.ContentConfig{
@@ -207,7 +218,7 @@ func TestNormalPath(t *testing.T) {
 		}
 		option := options.ServerOption{}
 		mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
-		ctr, kubeInformerFactory, _ := newMXController(config, kubeClientSet, mxJobClientSet, controller.NoResyncPeriodFunc, option)
+		ctr, kubeInformerFactory, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, option)
 		ctr.mxJobInformerSynced = testutil.AlwaysReady
 		ctr.PodInformerSynced = testutil.AlwaysReady
 		ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -344,6 +355,14 @@ func TestRun(t *testing.T) {
 		},
 	},
 	)
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &batchv1alpha1.SchemeGroupVersion,
+		},
+	},
+	)
 	config := &rest.Config{
 		Host: "",
 		ContentConfig: rest.ContentConfig{
@@ -351,7 +370,7 @@ func TestRun(t *testing.T) {
 		},
 	}
 	mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+	ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
 	ctr.mxJobInformerSynced = testutil.AlwaysReady
 	ctr.PodInformerSynced = testutil.AlwaysReady
 	ctr.ServiceInformerSynced = testutil.AlwaysReady
@@ -379,10 +398,18 @@ func TestSyncPdb(t *testing.T) {
 	}
 	mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
 	kubeClientSet := fake.NewSimpleClientset()
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &batchv1alpha1.SchemeGroupVersion,
+		},
+	},
+	)
 	option := options.ServerOption{
 		EnableGangScheduling: true,
 	}
-	ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, controller.NoResyncPeriodFunc, option)
+	ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, option)
 
 	type testCase struct {
 		mxJob     *mxv1beta1.MXJob
