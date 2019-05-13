@@ -32,6 +32,9 @@ import (
 )
 
 const (
+	// gang scheduler name.
+	gangSchedulerName = "kube-batch"
+
 	// mxConfig is the environment variable name of MXNet cluster spec.
 	mxConfig = "MX_CONFIG"
 
@@ -40,6 +43,9 @@ const (
 	podTemplateRestartPolicyReason = "SettedPodTemplateRestartPolicy"
 	// exitedWithCodeReason is the normal reason when the pod is exited because of the exit code.
 	exitedWithCodeReason = "ExitedWithCode"
+	// podTemplateSchedulerNameReason is the warning reason when other scheduler name is set
+	// in pod templates with gang-scheduling enabled
+	podTemplateSchedulerNameReason = "SettedPodTemplateSchedulerName"
 )
 
 // reconcilePods checks and updates pods for each given MXReplicaSpec.
@@ -157,6 +163,19 @@ func (tc *MXController) createNewPod(mxjob *mxv1beta1.MXJob, rt, index string, s
 	}
 	setRestartPolicy(podTemplate, spec)
 
+	// if gang-scheduling is enabled:
+	// 1. if user has specified other scheduler, we report a warning without overriding any fields.
+	// 2. if no SchedulerName is set for pods, then we set the SchedulerName to "kube-batch".
+	if tc.Config.EnableGangScheduling {
+		if isNonGangSchedulerSet(mxjob) {
+			errMsg := "Another scheduler is specified when gang-scheduling is enabled and it will not be overwritten"
+			logger.Warning(errMsg)
+			tc.Recorder.Event(mxjob, v1.EventTypeWarning, podTemplateSchedulerNameReason, errMsg)
+		} else {
+			podTemplate.Spec.SchedulerName = gangSchedulerName
+		}
+	}
+
 	err = tc.PodControl.CreatePodsWithControllerRef(mxjob.Namespace, podTemplate, mxjob, controllerRef)
 	if err != nil && errors.IsTimeout(err) {
 		// Pod is created but its initialization has timed out.
@@ -259,4 +278,13 @@ func getConfigAddr(mxConfigData *MXConfig, rtype mxv1beta1.MXReplicaType, index 
 func getConfigReplica(mxConfigData *MXConfig, rtype mxv1beta1.MXReplicaType) int {
 	rt := strings.ToLower(string(rtype))
 	return len(mxConfigData.Cluster[rt])
+}
+
+func isNonGangSchedulerSet(job *mxv1beta1.MXJob) bool {
+	for _, spec := range job.Spec.MXReplicaSpecs {
+		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
+			return true
+		}
+	}
+	return false
 }
