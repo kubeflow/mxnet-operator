@@ -15,7 +15,7 @@ import (
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/validation"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
-	mxjobinformersv1beta1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
+	mxjobinformersv1beta1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/mxnet/v1beta1"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1beta1/unstructured"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
@@ -26,10 +26,10 @@ const (
 )
 
 var (
-	errGetFromKey    = fmt.Errorf("Failed to get MXJob from key")
-	errNotExists     = fmt.Errorf("The object is not found")
-	errFailedMarshal = fmt.Errorf("Failed to marshal the object to MXJob")
-	errWrongJobMode  = fmt.Errorf("Failed to inspect jobMode, maybe mxReplicaSpecs has a member which is not belong to this jobMode or misses one")
+	errGetFromKey    = fmt.Errorf("failed to get MXJob from key")
+	errNotExists     = fmt.Errorf("the object is not found")
+	errFailedMarshal = fmt.Errorf("failed to marshal the object to MXJob")
+	errWrongJobMode  = fmt.Errorf("failed to inspect jobMode, maybe mxReplicaSpecs has a member which is not belong to this jobMode or misses one")
 )
 
 func NewUnstructuredMXJobInformer(restConfig *restclientset.Config, namespace string) mxjobinformersv1beta1.MXJobInformer {

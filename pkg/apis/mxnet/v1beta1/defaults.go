@@ -76,7 +76,7 @@ func setTypeNamesToCamelCase(mxJob *MXJob) {
 // E.g. from server to Server; from WORKER to Worker.
 func setTypeNameToCamelCase(mxJob *MXJob, typ MXReplicaType) {
 	for t := range mxJob.Spec.MXReplicaSpecs {
-		if strings.ToLower(string(t)) == strings.ToLower(string(typ)) && t != typ {
+		if strings.EqualFold(string(t), string(typ)) && t != typ {
 			spec := mxJob.Spec.MXReplicaSpecs[t]
 			delete(mxJob.Spec.MXReplicaSpecs, t)
 			mxJob.Spec.MXReplicaSpecs[typ] = spec

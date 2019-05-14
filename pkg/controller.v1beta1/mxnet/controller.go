@@ -34,8 +34,8 @@ import (
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	mxjobscheme "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
-	mxjobinformersv1beta1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
-	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/kubeflow/v1beta1"
+	mxjobinformersv1beta1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/mxnet/v1beta1"
+	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/mxnet/v1beta1"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
@@ -260,7 +260,7 @@ func (tc *MXController) processNextWorkItem() bool {
 		return true
 	}
 
-	utilruntime.HandleError(fmt.Errorf("Error syncing mxjob: %v", err))
+	utilruntime.HandleError(fmt.Errorf("error syncing mxjob: %v", err))
 	tc.WorkQueue.AddRateLimited(key)
 
 	return true
@@ -269,7 +269,7 @@ func (tc *MXController) processNextWorkItem() bool {
 func (tc *MXController) enqueueMXJob(mxjob interface{}) {
 	key, err := KeyFunc(mxjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for mxjob object %#v: %v", mxjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
 		return
 	}
 
@@ -452,7 +452,7 @@ func (tc *MXController) satisfiedExpectations(mxjob *mxv1beta1.MXJob) bool {
 	satisfied := false
 	mxjobKey, err := KeyFunc(mxjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for mxjob object %#v: %v", mxjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
 		return false
 	}
 

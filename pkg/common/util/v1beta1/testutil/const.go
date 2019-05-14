@@ -22,9 +22,9 @@ const (
 	TestImageName = "mxjob/mxnet-operator:v1beta1"
 	TestMXJobName = "test-mxjob"
 
-	LabelScheduler= "scheduler"
-	LabelWorker   = "worker"
-	LabelServer   = "server"
+	LabelScheduler = "scheduler"
+	LabelWorker    = "worker"
+	LabelServer    = "server"
 
 	SleepInterval = 500 * time.Millisecond
 	ThreadCount   = 1

@@ -39,7 +39,7 @@ const (
 )
 
 // updateStatus updates the status of the mxjob.
- func updateStatusSingle(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, replicas int, restart, schedulerCompleted bool) error {
+func updateStatusSingle(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, replicas int, restart, schedulerCompleted bool) error {
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(mxjob.Status.MXReplicaStatuses[rtype].Succeeded)
 	running := int(mxjob.Status.MXReplicaStatuses[rtype].Active)
