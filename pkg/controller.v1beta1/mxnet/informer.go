@@ -15,7 +15,7 @@ import (
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/validation"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
-	mxjobinformersv1beta1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/kubeflow/v1beta1"
+	mxjobinformersv1beta1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/mxnet/v1beta1"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1beta1/unstructured"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
