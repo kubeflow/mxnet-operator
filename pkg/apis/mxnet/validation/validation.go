@@ -57,7 +57,7 @@ func validateBetaOneReplicaSpecs(specs map[mxv1beta1.MXReplicaType]*mxv1beta1.MX
 		}
 	}
 	if foundScheduler > 1 {
-		return fmt.Errorf("More than 1 scheduler found")
+		return fmt.Errorf("more than 1 scheduler found")
 	}
 	return nil
 }

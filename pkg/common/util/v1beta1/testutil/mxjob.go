@@ -24,9 +24,9 @@ import (
 )
 
 func NewMXJobWithCleanPolicy(scheduler, worker, server int, policy mxv1beta1.CleanPodPolicy) *mxv1beta1.MXJob {
-	
+
 	var mxJob *mxv1beta1.MXJob
-		
+
 	if scheduler > 0 {
 		mxJob = NewMXJobWithScheduler(worker, server)
 	} else {
@@ -38,9 +38,9 @@ func NewMXJobWithCleanPolicy(scheduler, worker, server int, policy mxv1beta1.Cle
 }
 
 func NewMXJobWithCleanupJobDelay(scheduler, worker, server int, ttl *int32) *mxv1beta1.MXJob {
-	
+
 	var mxJob *mxv1beta1.MXJob
-		
+
 	if scheduler > 0 {
 		mxJob = NewMXJobWithScheduler(worker, server)
 	} else {
@@ -99,12 +99,12 @@ func NewMXReplicaSpecTemplate() v1.PodTemplateSpec {
 	return v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:  mxv1beta1.DefaultContainerName,
 					Image: TestImageName,
 					Args:  []string{"Fake", "Fake"},
 					Ports: []v1.ContainerPort{
-						v1.ContainerPort{
+						{
 							Name:          mxv1beta1.DefaultPortName,
 							ContainerPort: mxv1beta1.DefaultPort,
 						},

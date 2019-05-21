@@ -69,7 +69,7 @@ func (tc *MXController) reconcileServices(
 func (tc *MXController) createNewService(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, index string, spec *mxv1beta1.MXReplicaSpec) error {
 	mxjobKey, err := KeyFunc(mxjob)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("Couldn't get key for mxjob object %#v: %v", mxjob, err))
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
 		return err
 	}
 

@@ -18,7 +18,7 @@ package mxnet
 import (
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1beta1/testutil"
@@ -72,7 +72,7 @@ func TestStatus(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		testCase{
+		{
 			description:                "Worker is failed",
 			mxJob:                      testutil.NewMXJob(1, 0),
 			expectedFailedScheduler:    0,
@@ -88,7 +88,7 @@ func TestStatus(t *testing.T) {
 			schedulerCompleted:         false,
 			expectedType:               mxv1beta1.MXJobFailed,
 		},
-		testCase{
+		{
 			description:                "Worker is succeeded",
 			mxJob:                      testutil.NewMXJobWithScheduler(1, 0),
 			expectedFailedScheduler:    0,
@@ -104,7 +104,7 @@ func TestStatus(t *testing.T) {
 			schedulerCompleted:         true,
 			expectedType:               mxv1beta1.MXJobSucceeded,
 		},
-		testCase{
+		{
 			description:                " Worker is running",
 			mxJob:                      testutil.NewMXJobWithScheduler(1, 0),
 			expectedFailedScheduler:    0,
@@ -120,7 +120,7 @@ func TestStatus(t *testing.T) {
 			schedulerCompleted:         false,
 			expectedType:               mxv1beta1.MXJobRunning,
 		},
-		testCase{
+		{
 			description:                " 2 workers are succeeded, 2 workers are active",
 			mxJob:                      testutil.NewMXJobWithScheduler(4, 0),
 			expectedFailedScheduler:    0,
@@ -136,7 +136,7 @@ func TestStatus(t *testing.T) {
 			schedulerCompleted:         false,
 			expectedType:               mxv1beta1.MXJobRunning,
 		},
-		testCase{
+		{
 			description:                " 2 workers are running, 2 workers are failed",
 			mxJob:                      testutil.NewMXJobWithScheduler(4, 0),
 			expectedFailedScheduler:    0,
@@ -152,7 +152,7 @@ func TestStatus(t *testing.T) {
 			schedulerCompleted:         false,
 			expectedType:               mxv1beta1.MXJobFailed,
 		},
-		testCase{
+		{
 			description:                " 2 workers are succeeded, 2 workers are failed",
 			mxJob:                      testutil.NewMXJobWithScheduler(4, 0),
 			expectedFailedScheduler:    0,

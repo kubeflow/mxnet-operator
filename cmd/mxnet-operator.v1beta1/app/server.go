@@ -19,15 +19,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubeflow/mxnet-operator/cmd/mxnet-operator.v1beta1/app/options"
-	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
-	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
-	"github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
-	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
-	controller "github.com/kubeflow/mxnet-operator/pkg/controller.v1beta1/mxnet"
-	"github.com/kubeflow/mxnet-operator/pkg/version"
-	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	log "github.com/sirupsen/logrus"
+
 	"k8s.io/api/core/v1"
 	crdclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +31,15 @@ import (
 	election "k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
+
+	"github.com/kubeflow/mxnet-operator/cmd/mxnet-operator.v1beta1/app/options"
+	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
+	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
+	"github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
+	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
+	controller "github.com/kubeflow/mxnet-operator/pkg/controller.v1beta1/mxnet"
+	"github.com/kubeflow/mxnet-operator/pkg/version"
+	"github.com/kubeflow/tf-operator/pkg/util/signals"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 )
 
@@ -125,7 +127,7 @@ func Run(opt *options.ServerOption) error {
 
 	id, err := os.Hostname()
 	if err != nil {
-		return fmt.Errorf("Failed to get hostname: %v", err)
+		return fmt.Errorf("failed to get hostname: %v", err)
 	}
 
 	// Prepare event clients.

@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	errPortNotFound = fmt.Errorf("Failed to found the port")
+	errPortNotFound = fmt.Errorf("failed to found the port")
 )
 
 // GetPortFromMXJob gets the port of mxnet container.

@@ -41,7 +41,7 @@ func (tc *MXController) addMXJob(obj interface{}) {
 
 			status := mxv1beta1.MXJobStatus{
 				Conditions: []mxv1beta1.MXJobCondition{
-					mxv1beta1.MXJobCondition{
+					{
 						Type:               mxv1beta1.MXJobFailed,
 						Status:             v1.ConditionTrue,
 						LastUpdateTime:     metav1.Now(),
@@ -58,7 +58,9 @@ func (tc *MXController) addMXJob(obj interface{}) {
 			}
 			client, err := k8sutil.NewCRDRestClient(&mxv1beta1.SchemeGroupVersion)
 			if err == nil {
-				metav1unstructured.SetNestedField(un.Object, statusMap, "status")
+				if err1 := metav1unstructured.SetNestedField(un.Object, statusMap, "status"); err1 != nil {
+					logger.Errorf("Could not set nested field: %v", err1)
+				}
 				logger.Infof("Updating the job to; %+v", un.Object)
 				err = client.Update(un, mxv1beta1.Plural)
 				if err != nil {
@@ -88,7 +90,7 @@ func (tc *MXController) addMXJob(obj interface{}) {
 	// Convert from mxjob object
 	err = unstructuredFromMXJob(obj, mxJob)
 	if err != nil {
-		logger.Error("Failed to convert the obj: %v", err)
+		logger.Errorf("Failed to convert the obj: %v", err)
 		return
 	}
 	tc.enqueueMXJob(obj)

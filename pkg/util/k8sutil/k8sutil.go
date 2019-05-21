@@ -30,10 +30,6 @@ import (
 // RecommendedConfigPathEnvVar is a environment variable for path configuration
 const RecommendedConfigPathEnvVar = "KUBECONFIG"
 
-func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
-	o.SetOwnerReferences(append(o.GetOwnerReferences(), r))
-}
-
 // MustNewKubeClient returns new kubernetes client for cluster configuration
 func MustNewKubeClient() kubernetes.Interface {
 	cfg, err := GetClusterConfig()
@@ -89,15 +85,5 @@ func CascadeDeleteOptions(gracePeriodSeconds int64) *metav1.DeleteOptions {
 			foreground := metav1.DeletePropagationForeground
 			return &foreground
 		}(),
-	}
-}
-
-// mergeLabels merges l2 into l1. Conflicting labels will be skipped.
-func mergeLabels(l1, l2 map[string]string) {
-	for k, v := range l2 {
-		if _, ok := l1[k]; ok {
-			continue
-		}
-		l1[k] = v
 	}
 }

@@ -426,21 +426,6 @@ func TestSyncPdb(t *testing.T) {
 				Spec: mxv1beta1.MXJobSpec{
 					MXReplicaSpecs: map[mxv1beta1.MXReplicaType]*mxv1beta1.MXReplicaSpec{
 						mxv1beta1.MXReplicaTypeWorker: &mxv1beta1.MXReplicaSpec{
-							Replicas: proto.Int32(1),
-						},
-					},
-				},
-			},
-			expectPdb: nil,
-		},
-		{
-			mxJob: &mxv1beta1.MXJob{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-sync-pdb",
-				},
-				Spec: mxv1beta1.MXJobSpec{
-					MXReplicaSpecs: map[mxv1beta1.MXReplicaType]*mxv1beta1.MXReplicaSpec{
-						mxv1beta1.MXReplicaTypeWorker: &mxv1beta1.MXReplicaSpec{
 							Replicas: proto.Int32(2),
 						},
 					},
