@@ -17,6 +17,7 @@
 package scheme
 
 import (
+	kubeflowv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	kubeflowv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -49,4 +50,5 @@ func init() {
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
 	kubeflowv1beta1.AddToScheme(scheme)
+	kubeflowv1.AddToScheme(scheme)
 }

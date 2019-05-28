@@ -17,6 +17,7 @@ package validation
 import (
 	"testing"
 
+	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 
 	"k8s.io/api/core/v1"
@@ -83,6 +84,73 @@ func TestValidateAlphaTwoMXJobSpec(t *testing.T) {
 	}
 	for _, c := range testCases {
 		err := ValidateBetaOneMXJobSpec(&c)
+		if err.Error() != "MXJobSpec is not valid" {
+			t.Error("Failed validate the alpha2.MXJobSpec")
+		}
+	}
+}
+
+func TestValidateV1MXJobSpec(t *testing.T) {
+	testCases := []mxv1.MXJobSpec{
+		{
+			MXReplicaSpecs: nil,
+		},
+		{
+			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
+				mxv1.MXReplicaTypeWorker: &mxv1.MXReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{},
+						},
+					},
+				},
+			},
+		},
+		{
+			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
+				mxv1.MXReplicaTypeWorker: &mxv1.MXReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Image: "",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
+				mxv1.MXReplicaTypeWorker: &mxv1.MXReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								v1.Container{
+									Name:  "",
+									Image: "mxjob/mxnet:gpu",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
+				mxv1.MXReplicaTypeScheduler: &mxv1.MXReplicaSpec{
+					Template: v1.PodTemplateSpec{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, c := range testCases {
+		err := ValidateV1MXJobSpec(&c)
 		if err.Error() != "MXJobSpec is not valid" {
 			t.Error("Failed validate the alpha2.MXJobSpec")
 		}
