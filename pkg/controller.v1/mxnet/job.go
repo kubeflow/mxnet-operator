@@ -102,8 +102,37 @@ func (tc *MXController) updateMXJob(old, cur interface{}) {
 	if err != nil {
 		return
 	}
+	curMXJob, err := mxJobFromUnstructured(cur)
+	if err != nil {
+		return
+	}
+
+	// never return error
+	key, err := KeyFunc(curMXJob)
+	if err != nil {
+		return
+	}
+
 	log.Infof("Updating mxjob: %s", oldMXJob.Name)
 	tc.enqueueMXJob(cur)
+
+	// check if need to add a new rsync for ActiveDeadlineSeconds
+	if curMXJob.Status.StartTime != nil {
+		curMXJobADS := curMXJob.Spec.ActiveDeadlineSeconds
+		if curMXJobADS == nil {
+			return
+		}
+		oldMXJobADS := oldMXJob.Spec.ActiveDeadlineSeconds
+		if oldMXJobADS == nil || *oldMXJobADS != *curMXJobADS {
+			now := metav1.Now()
+			start := curMXJob.Status.StartTime.Time
+			passed := now.Time.Sub(start)
+			total := time.Duration(*curMXJobADS) * time.Second
+			// AddAfter will handle total < passed
+			tc.WorkQueue.AddAfter(key, total-passed)
+			log.Infof("job ActiveDeadlineSeconds updated, will rsync after %d seconds", total-passed)
+		}
+	}
 }
 
 func (tc *MXController) deletePodsAndServices(mxJob *mxv1.MXJob, pods []*v1.Pod) error {
@@ -160,4 +189,20 @@ func (tc *MXController) cleanupMXJob(mxJob *mxv1.MXJob) error {
 // deleteMXJob deletes the given MXJob.
 func (tc *MXController) deleteMXJob(mxJob *mxv1.MXJob) error {
 	return tc.mxJobClientSet.KubeflowV1beta1().MXJobs(mxJob.Namespace).Delete(mxJob.Name, &metav1.DeleteOptions{})
+}
+
+func getTotalReplicas(mxjob *mxv1.MXJob) int32 {
+	mxjobReplicas := int32(0)
+	for _, r := range mxjob.Spec.MXReplicaSpecs {
+		mxjobReplicas += *r.Replicas
+	}
+	return mxjobReplicas
+}
+
+func getTotalFailedReplicas(mxjob *mxv1.MXJob) int32 {
+	totalFailedReplicas := int32(0)
+	for rtype := range mxjob.Status.MXReplicaStatuses {
+		totalFailedReplicas += mxjob.Status.MXReplicaStatuses[rtype].Failed
+	}
+	return totalFailedReplicas
 }

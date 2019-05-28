@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -371,9 +372,9 @@ func TestDeletePodsAndServices(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelScheduler, tc.pendingSchedulerPods, tc.activeSchedulerPods, tc.succeededSchedulerPods, tc.failedSchedulerPods, t)
-		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
-		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelScheduler, tc.pendingSchedulerPods, tc.activeSchedulerPods, tc.succeededSchedulerPods, tc.failedSchedulerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, nil, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.mxJob, testutil.LabelScheduler, tc.activeSchedulerServices, t)
@@ -566,9 +567,9 @@ func TestCleanupMXJob(t *testing.T) {
 		}
 
 		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelScheduler, tc.pendingSchedulerPods, tc.activeSchedulerPods, tc.succeededSchedulerPods, tc.failedSchedulerPods, t)
-		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, t)
-		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelScheduler, tc.pendingSchedulerPods, tc.activeSchedulerPods, tc.succeededSchedulerPods, tc.failedSchedulerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, nil, t)
 
 		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
 		testutil.SetServices(serviceIndexer, tc.mxJob, testutil.LabelScheduler, tc.activeSchedulerServices, t)
@@ -591,6 +592,269 @@ func TestCleanupMXJob(t *testing.T) {
 
 		if deleteFinished != tc.expectedDeleteFinished {
 			t.Errorf("%s: unexpected status. Expected %v, saw %v", tc.description, tc.expectedDeleteFinished, deleteFinished)
+		}
+	}
+}
+
+func TestActiveDeadlineSeconds(t *testing.T) {
+	type testCase struct {
+		description string
+		mxJob       *mxv1.MXJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		pendingServerPods   int32
+		activeServerPods    int32
+		succeededServerPods int32
+		failedServerPods    int32
+
+		activeWorkerServices int32
+		activeServerServices int32
+
+		expectedPodDeletions int
+	}
+
+	ads2 := int64(2)
+	adsTest2 := &ads2
+	testCases := []testCase{
+		testCase{
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds unset",
+			mxJob:       testutil.NewMXJobWithActiveDeadlineSeconds(0, 4, 2, nil),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingServerPods:   0,
+			activeServerPods:    2,
+			succeededServerPods: 0,
+			failedServerPods:    0,
+
+			activeWorkerServices: 4,
+			activeServerServices: 2,
+
+			expectedPodDeletions: 0,
+		},
+		testCase{
+			description: "4 workers and 2 ps is running, ActiveDeadlineSeconds is 2",
+			mxJob:       testutil.NewMXJobWithActiveDeadlineSeconds(0, 4, 2, adsTest2),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			pendingServerPods:   0,
+			activeServerPods:    2,
+			succeededServerPods: 0,
+			failedServerPods:    0,
+
+			activeWorkerServices: 4,
+			activeServerServices: 2,
+
+			expectedPodDeletions: 6,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &batchv1alpha1.SchemeGroupVersion,
+			},
+		},
+		)
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &mxv1.SchemeGroupVersion,
+			},
+		}
+		mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.mxJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		mxJobIndexer := ctr.mxJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(mxJob *mxv1.MXJob) error {
+			return nil
+		}
+
+		unstructured, err := testutil.ConvertMXJobToUnstructured(tc.mxJob)
+		if err != nil {
+			t.Errorf("Failed to convert the MXJob to Unstructured: %v", err)
+		}
+
+		if err := mxJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add mxjob to mxJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, nil, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, nil, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.mxJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.mxJob, testutil.LabelServer, tc.activeServerServices, t)
+
+		foo, _ := ctr.getMXJobFromName("default", "test-mxjob")
+		now := metav1.Now()
+		foo.Status.StartTime = &now
+
+		ads := tc.mxJob.Spec.ActiveDeadlineSeconds
+		if ads != nil {
+			dur := time.Second * time.Duration(*ads)
+			time.Sleep(dur)
+		}
+
+		err = ctr.reconcileMXJobs(foo)
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
+		}
+	}
+}
+
+func TestBackoffForOnFailure(t *testing.T) {
+	type testCase struct {
+		description string
+		mxJob       *mxv1.MXJob
+
+		pendingWorkerPods   int32
+		activeWorkerPods    int32
+		succeededWorkerPods int32
+		failedWorkerPods    int32
+
+		restartCounts []int32
+
+		pendingServerPods   int32
+		activeServerPods    int32
+		succeededServerPods int32
+		failedServerPods    int32
+
+		activeWorkerServices int32
+		activeServerServices int32
+
+		expectedPodDeletions int
+	}
+
+	backoffLimit4 := int32(4)
+	backoffLimitTest4 := &backoffLimit4
+	testCases := []testCase{
+		testCase{
+			description: "4 workers each having 1 restartCount and 2 ps is running, backoffLimit 4 ",
+			mxJob:       testutil.NewMXJobWithBackoffLimit(0, 4, 2, backoffLimitTest4),
+
+			pendingWorkerPods:   0,
+			activeWorkerPods:    4,
+			succeededWorkerPods: 0,
+			failedWorkerPods:    0,
+
+			restartCounts: []int32{1, 1, 1, 1},
+
+			pendingServerPods:   0,
+			activeServerPods:    2,
+			succeededServerPods: 0,
+			failedServerPods:    0,
+
+			activeWorkerServices: 4,
+			activeServerServices: 2,
+
+			expectedPodDeletions: 6,
+		},
+	}
+	for _, tc := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &mxv1.SchemeGroupVersion,
+			},
+		}
+		mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
+		ctr, kubeInformerFactory, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
+		fakePodControl := &controller.FakePodControl{}
+		ctr.PodControl = fakePodControl
+		fakeServiceControl := &control.FakeServiceControl{}
+		ctr.ServiceControl = fakeServiceControl
+		ctr.Recorder = &record.FakeRecorder{}
+		ctr.mxJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+		mxJobIndexer := ctr.mxJobInformer.GetIndexer()
+		ctr.updateStatusHandler = func(mxJob *mxv1.MXJob) error {
+			return nil
+		}
+
+		unstructured, err := testutil.ConvertMXJobToUnstructured(tc.mxJob)
+		if err != nil {
+			t.Errorf("Failed to convert the MXJob to Unstructured: %v", err)
+		}
+
+		if err := mxJobIndexer.Add(unstructured); err != nil {
+			t.Errorf("Failed to add mxjob to mxJobIndexer: %v", err)
+		}
+
+		podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelWorker, tc.pendingWorkerPods, tc.activeWorkerPods, tc.succeededWorkerPods, tc.failedWorkerPods, tc.restartCounts, t)
+		testutil.SetPodsStatuses(podIndexer, tc.mxJob, testutil.LabelServer, tc.pendingServerPods, tc.activeServerPods, tc.succeededServerPods, tc.failedServerPods, tc.restartCounts, t)
+
+		serviceIndexer := kubeInformerFactory.Core().V1().Services().Informer().GetIndexer()
+		testutil.SetServices(serviceIndexer, tc.mxJob, testutil.LabelWorker, tc.activeWorkerServices, t)
+		testutil.SetServices(serviceIndexer, tc.mxJob, testutil.LabelServer, tc.activeServerServices, t)
+
+		forget, err := ctr.syncMXJob(testutil.GetKey(tc.mxJob, t))
+		if err != nil {
+			t.Errorf("%s: unexpected error when syncing jobs %v", tc.description, err)
+		}
+		if !forget {
+			t.Errorf("%s: unexpected forget value. Expected true, saw %v\n", tc.description, forget)
+		}
+		if len(fakePodControl.DeletePodName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of pod deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakePodControl.DeletePodName))
+		}
+		if len(fakeServiceControl.DeleteServiceName) != tc.expectedPodDeletions {
+			t.Errorf("%s: unexpected number of service deletes.  Expected %d, saw %d\n", tc.description, tc.expectedPodDeletions, len(fakeServiceControl.DeleteServiceName))
 		}
 	}
 }

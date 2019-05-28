@@ -17,11 +17,13 @@ package mxnet
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -36,10 +38,10 @@ import (
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/mxnet/v1"
 	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/mxnet/v1"
+	"github.com/kubeflow/mxnet-operator/pkg/util/k8sutil"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -331,17 +333,15 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	return true, err
 }
 
-func getTotalReplicas(mxjob *mxv1.MXJob) int32 {
-	mxjobReplicas := int32(0)
-	for _, r := range mxjob.Spec.MXReplicaSpecs {
-		mxjobReplicas += *r.Replicas
-	}
-	return mxjobReplicas
-}
-
 // reconcileMXJobs checks and updates replicas for each given MXReplicaSpec.
 // It will requeue the mxjob in case of an error while creating/deleting pods/services.
 func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
+	mxjobKey, err := KeyFunc(mxjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
+		return err
+	}
+
 	logger := mxlogger.LoggerForJob(mxjob)
 	logger.Infof("Reconcile MXJobs %s", mxjob.Name)
 
@@ -359,10 +359,61 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
 		return err
 	}
 
+	// retrieve the previous number of retry
+	previousRetry := tc.WorkQueue.NumRequeues(mxjobKey)
+
+	activePods := k8sutil.FilterActivePods(pods)
+	active := int32(len(activePods))
+	failed := k8sutil.FilterPodCount(pods, v1.PodFailed)
+	totalReplicas := getTotalReplicas(mxjob)
+	prevReplicasFailedNum := getTotalFailedReplicas(mxjob)
+
+	var failureMessage string
+	mxJobExceedsLimit := false
+	exceedsBackoffLimit := false
+	pastBackoffLimit := false
+
+	if mxjob.Spec.BackoffLimit != nil {
+		jobHasNewFailure := failed > prevReplicasFailedNum
+		// new failures happen when status does not reflect the failures and active
+		// is different than parallelism, otherwise the previous controller loop
+		// failed updating status so even if we pick up failure it is not a new one
+		exceedsBackoffLimit = jobHasNewFailure && (active != totalReplicas) &&
+			(int32(previousRetry)+1 > *mxjob.Spec.BackoffLimit)
+
+		pastBackoffLimit, err = tc.pastBackoffLimit(mxjob, pods)
+		if err != nil {
+			return err
+		}
+	}
+
+	if exceedsBackoffLimit || pastBackoffLimit {
+		// check if the number of pod restart exceeds backoff (for restart OnFailure only)
+		// OR if the number of failed jobs increased since the last syncJob
+		mxJobExceedsLimit = true
+		failureMessage = fmt.Sprintf("MXJob %s has failed because it has reached the specified backoff limit", mxjob.Name)
+	} else if tc.pastActiveDeadline(mxjob) {
+		failureMessage = fmt.Sprintf("MXJob %s has failed because it was active longer than specified deadline", mxjob.Name)
+		mxJobExceedsLimit = true
+	}
+
 	// If the MXJob is terminated, delete all pods and services.
-	if isSucceeded(mxjob.Status) || isFailed(mxjob.Status) {
+	if isSucceeded(mxjob.Status) || isFailed(mxjob.Status) || mxJobExceedsLimit {
 		if err := tc.deletePodsAndServices(mxjob, pods); err != nil {
 			return err
+		}
+
+		if mxJobExceedsLimit {
+			tc.Recorder.Event(mxjob, v1.EventTypeNormal, mxJobFailedReason, failureMessage)
+			if mxjob.Status.CompletionTime == nil {
+				now := metav1.Now()
+				mxjob.Status.CompletionTime = &now
+			}
+			err := updateMXJobConditions(mxjob, mxv1.MXJobFailed, mxJobFailedReason, failureMessage)
+			if err != nil {
+				mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
+				return err
+			}
 		}
 
 		if err := tc.cleanupMXJob(mxjob); err != nil {
@@ -407,6 +458,58 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
 
 	// TODO(CPH): Add check here, no need to update the mxjob if the status hasn't changed since last time.
 	return tc.updateStatusHandler(mxjob)
+}
+
+// pastBackoffLimit checks if container restartCounts sum exceeds BackoffLimit
+// this method applies only to pods with restartPolicy == OnFailure or Always
+func (tc *MXController) pastBackoffLimit(mxjob *mxv1.MXJob, pods []*v1.Pod) (bool, error) {
+	if mxjob.Spec.BackoffLimit == nil {
+		return false, nil
+	}
+	logger := mxlogger.LoggerForJob(mxjob)
+	result := int32(0)
+	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
+		if spec.RestartPolicy != mxv1.RestartPolicyOnFailure && spec.RestartPolicy != mxv1.RestartPolicyAlways {
+			logger.Warnf("The restart policy of replica %v of the job %v is not OnFailure or Always. Not counted in backoff limit.", rtype, mxjob.Name)
+			continue
+		}
+		// Convert TFReplicaType to lower string.
+		rt := strings.ToLower(string(rtype))
+		pods, err := tc.FilterPodsForReplicaType(pods, rt)
+		if err != nil {
+			return false, err
+		}
+		for i := range pods {
+			po := pods[i]
+			if po.Status.Phase == v1.PodRunning || po.Status.Phase != v1.PodPending {
+				for j := range po.Status.InitContainerStatuses {
+					stat := po.Status.InitContainerStatuses[j]
+					result += stat.RestartCount
+				}
+				for j := range po.Status.ContainerStatuses {
+					stat := po.Status.ContainerStatuses[j]
+					result += stat.RestartCount
+				}
+			}
+		}
+	}
+
+	if *mxjob.Spec.BackoffLimit == 0 {
+		return result > 0, nil
+	}
+	return result >= *mxjob.Spec.BackoffLimit, nil
+}
+
+// pastActiveDeadline checks if job has ActiveDeadlineSeconds field set and if it is exceeded.
+func (tc *MXController) pastActiveDeadline(mxjob *mxv1.MXJob) bool {
+	if mxjob.Spec.ActiveDeadlineSeconds == nil || mxjob.Status.StartTime == nil {
+		return false
+	}
+	now := metav1.Now()
+	start := mxjob.Status.StartTime.Time
+	duration := now.Time.Sub(start)
+	allowedDuration := time.Duration(*mxjob.Spec.ActiveDeadlineSeconds) * time.Second
+	return duration >= allowedDuration
 }
 
 // inspectMXjob make sure a MXjob has all the necessary MXReplicaSpecs members for a special jobMode.

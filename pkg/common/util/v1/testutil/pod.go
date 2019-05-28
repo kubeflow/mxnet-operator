@@ -64,7 +64,7 @@ func NewPodList(count int32, status v1.PodPhase, mxJob *mxv1.MXJob, typ string, 
 	return pods
 }
 
-func SetPodsStatuses(podIndexer cache.Indexer, mxJob *mxv1.MXJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, t *testing.T) {
+func SetPodsStatuses(podIndexer cache.Indexer, mxJob *mxv1.MXJob, typ string, pendingPods, activePods, succeededPods, failedPods int32, restartCounts []int32, t *testing.T) {
 	var index int32
 	for _, pod := range NewPodList(pendingPods, v1.PodPending, mxJob, typ, index, t) {
 		if err := podIndexer.Add(pod); err != nil {
@@ -72,7 +72,10 @@ func SetPodsStatuses(podIndexer cache.Indexer, mxJob *mxv1.MXJob, typ string, pe
 		}
 	}
 	index += pendingPods
-	for _, pod := range NewPodList(activePods, v1.PodRunning, mxJob, typ, index, t) {
+	for i, pod := range NewPodList(activePods, v1.PodRunning, mxJob, typ, index, t) {
+		if restartCounts != nil {
+			pod.Status.ContainerStatuses = []v1.ContainerStatus{{RestartCount: restartCounts[i]}}
+		}
 		if err := podIndexer.Add(pod); err != nil {
 			t.Errorf("%s: unexpected error when adding pod %v", mxJob.Name, err)
 		}

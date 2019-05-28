@@ -17,9 +17,11 @@ package mxnet
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
@@ -30,16 +32,22 @@ const (
 	mxJobCreatedReason = "MXJobCreated"
 	// mxJobSucceededReason is added in a mxjob when it is succeeded.
 	mxJobSucceededReason = "MXJobSucceeded"
-	// mxJobSucceededReason is added in a mxjob when it is running.
+	// mxJobRunningReason is added in a mxjob when it is running.
 	mxJobRunningReason = "MXJobRunning"
-	// mxJobSucceededReason is added in a mxjob when it is failed.
+	// mxJobFailedReason is added in a mxjob when it is failed.
 	mxJobFailedReason = "MXJobFailed"
 	// mxJobRestarting is added in a mxjob when it is restarting.
 	mxJobRestartingReason = "MXJobRestarting"
 )
 
 // updateStatus updates the status of the mxjob.
-func updateStatusSingle(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType, replicas int, restart, schedulerCompleted bool) error {
+func (tc *MXController) updateStatusSingle(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType, replicas int, restart, schedulerCompleted bool) error {
+	mxjobKey, err := KeyFunc(mxjob)
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
+		return err
+	}
+
 	// Expect to have `replicas - succeeded` pods alive.
 	expected := replicas - int(mxjob.Status.MXReplicaStatuses[rtype].Succeeded)
 	running := int(mxjob.Status.MXReplicaStatuses[rtype].Active)
@@ -51,6 +59,11 @@ func updateStatusSingle(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType, replicas in
 	if running == replicas && mxjob.Status.StartTime == nil {
 		now := metav1.Now()
 		mxjob.Status.StartTime = &now
+		// enqueue a sync to check if job past ActiveDeadlineSeconds
+		if mxjob.Spec.ActiveDeadlineSeconds != nil {
+			mxlogger.LoggerForJob(mxjob).Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.ActiveDeadlineSeconds)
+			tc.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.ActiveDeadlineSeconds)*time.Second)
+		}
 	}
 
 	if ContainSchedulerSpec(mxjob) {
