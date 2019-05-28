@@ -19,6 +19,7 @@ package externalversions
 import (
 	"fmt"
 
+	v1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	v1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -50,7 +51,11 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=kubeflow.org, Version=v1beta1
+	// Group=kubeflow.org, Version=v1
+	case v1.SchemeGroupVersion.WithResource("mxjobs"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1().MXJobs().Informer()}, nil
+
+		// Group=kubeflow.org, Version=v1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("mxjobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeflow().V1beta1().MXJobs().Informer()}, nil
 
