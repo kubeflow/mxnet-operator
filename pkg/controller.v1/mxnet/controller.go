@@ -310,14 +310,6 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	mxjob := sharedMXJob.DeepCopy()
 	mxjobNeedsSync := tc.satisfiedExpectations(mxjob)
 
-	if tc.Config.EnableGangScheduling {
-		minAvailableReplicas := getTotalReplicas(mxjob)
-		_, err := tc.SyncPodGroup(mxjob, minAvailableReplicas)
-		if err != nil {
-			logger.Warnf("Sync PodGroup %v: %v", mxjob.Name, err)
-		}
-	}
-
 	// Set default for the new mxjob.
 	scheme.Scheme.Default(mxjob)
 
@@ -346,14 +338,12 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
 	logger.Infof("Reconcile MXJobs %s", mxjob.Name)
 
 	pods, err := tc.GetPodsForJob(mxjob)
-
 	if err != nil {
 		logger.Warnf("getPodsForMXJob error %v", err)
 		return err
 	}
 
 	services, err := tc.GetServicesForJob(mxjob)
-
 	if err != nil {
 		logger.Warnf("getServicesForMXJob error %v", err)
 		return err
@@ -421,12 +411,8 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
 		}
 
 		if tc.Config.EnableGangScheduling {
-			tc.Recorder.Event(mxjob, v1.EventTypeNormal, "JobTerminated", "Job is terminated, deleting PodGroup")
 			if err := tc.DeletePodGroup(mxjob); err != nil {
-				tc.Recorder.Eventf(mxjob, v1.EventTypeWarning, "FailedDeletePodGroup", "Error deleting: %v", err)
 				return err
-			} else {
-				tc.Recorder.Eventf(mxjob, v1.EventTypeNormal, "SuccessfulDeletePodGroup", "Deleted PodGroup: %v", mxjob.Name)
 			}
 		}
 
@@ -435,6 +421,14 @@ func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
 		initializeMXReplicaStatuses(mxjob, mxv1.MXReplicaTypeWorker)
 		initializeMXReplicaStatuses(mxjob, mxv1.MXReplicaTypeServer)
 		return tc.updateStatusHandler(mxjob)
+	}
+
+	if tc.Config.EnableGangScheduling {
+		minAvailableReplicas := getTotalReplicas(mxjob)
+		_, err := tc.SyncPodGroup(mxjob, minAvailableReplicas)
+		if err != nil {
+			logger.Warnf("Sync PodGroup %v: %v", mxjob.Name, err)
+		}
 	}
 
 	// Save the current state of the replicas
