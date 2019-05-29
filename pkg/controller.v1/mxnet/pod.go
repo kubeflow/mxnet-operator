@@ -113,7 +113,7 @@ func (tc *MXController) reconcilePods(
 		}
 	}
 
-	return updateStatusSingle(mxjob, rtype, replicas, restart, schedulerCompleted)
+	return tc.updateStatusSingle(mxjob, rtype, replicas, restart, schedulerCompleted)
 }
 
 // createNewPod creates a new pod for the given index and type.

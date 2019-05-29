@@ -18,13 +18,50 @@ package mxnet
 import (
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
+	kubeclientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/kubernetes/pkg/controller"
 
+	"github.com/kubeflow/mxnet-operator/cmd/mxnet-operator.v1/app/options"
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
+	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1/testutil"
+
+	batchv1alpha1 "github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1"
+	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
 )
 
 func TestFailed(t *testing.T) {
+	// Prepare the clientset and controller for the test.
+	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &v1.SchemeGroupVersion,
+		},
+	},
+	)
+	// Prepare the kube-batch clientset and controller for the test.
+	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &batchv1alpha1.SchemeGroupVersion,
+		},
+	},
+	)
+	config := &rest.Config{
+		Host: "",
+		ContentConfig: rest.ContentConfig{
+			GroupVersion: &mxv1.SchemeGroupVersion,
+		},
+	}
+	option := options.ServerOption{}
+	mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
+	ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, option)
+	ctr.mxJobInformerSynced = testutil.AlwaysReady
+	ctr.PodInformerSynced = testutil.AlwaysReady
+	ctr.ServiceInformerSynced = testutil.AlwaysReady
+
 	mxJob := testutil.NewMXJob(3, 0)
 	initializeMXReplicaStatuses(mxJob, mxv1.MXReplicaTypeWorker)
 	pod := testutil.NewBasePod("pod", mxJob, t)
@@ -33,7 +70,7 @@ func TestFailed(t *testing.T) {
 	if mxJob.Status.MXReplicaStatuses[mxv1.MXReplicaTypeWorker].Failed != 1 {
 		t.Errorf("Failed to set the failed to 1")
 	}
-	err := updateStatusSingle(mxJob, mxv1.MXReplicaTypeWorker, 3, false, false)
+	err := ctr.updateStatusSingle(mxJob, mxv1.MXReplicaTypeWorker, 3, false, false)
 	if err != nil {
 		t.Errorf("Expected error %v to be nil", err)
 	}
@@ -171,6 +208,35 @@ func TestStatus(t *testing.T) {
 	}
 
 	for i, c := range testCases {
+		// Prepare the clientset and controller for the test.
+		kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &v1.SchemeGroupVersion,
+			},
+		},
+		)
+		// Prepare the kube-batch clientset and controller for the test.
+		kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &batchv1alpha1.SchemeGroupVersion,
+			},
+		},
+		)
+		config := &rest.Config{
+			Host: "",
+			ContentConfig: rest.ContentConfig{
+				GroupVersion: &mxv1.SchemeGroupVersion,
+			},
+		}
+		option := options.ServerOption{}
+		mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
+		ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, option)
+		ctr.mxJobInformerSynced = testutil.AlwaysReady
+		ctr.PodInformerSynced = testutil.AlwaysReady
+		ctr.ServiceInformerSynced = testutil.AlwaysReady
+
 		initializeMXReplicaStatuses(c.mxJob, mxv1.MXReplicaTypeScheduler)
 		initializeMXReplicaStatuses(c.mxJob, mxv1.MXReplicaTypeServer)
 		initializeMXReplicaStatuses(c.mxJob, mxv1.MXReplicaTypeWorker)
@@ -180,20 +246,20 @@ func TestStatus(t *testing.T) {
 		setStatusForTest(c.mxJob, mxv1.MXReplicaTypeWorker, c.expectedFailedWorker, c.expectedSucceededWorker, c.expectedActiveWorker, t)
 
 		if _, ok := c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeScheduler]; ok {
-			err := updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeScheduler, 1, c.restart, c.schedulerCompleted)
+			err := ctr.updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeScheduler, 1, c.restart, c.schedulerCompleted)
 			if err != nil {
 				t.Errorf("%s: Expected error %v to be nil", c.description, err)
 			}
 			if c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker] != nil {
 				replicas := c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].Replicas
-				err := updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeWorker, int(*replicas), c.restart, c.schedulerCompleted)
+				err := ctr.updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeWorker, int(*replicas), c.restart, c.schedulerCompleted)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeServer] != nil {
 				replicas := c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeServer].Replicas
-				err := updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeServer, int(*replicas), c.restart, c.schedulerCompleted)
+				err := ctr.updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeServer, int(*replicas), c.restart, c.schedulerCompleted)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
@@ -201,14 +267,14 @@ func TestStatus(t *testing.T) {
 		} else {
 			if c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker] != nil {
 				replicas := c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].Replicas
-				err := updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeWorker, int(*replicas), c.restart, c.schedulerCompleted)
+				err := ctr.updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeWorker, int(*replicas), c.restart, c.schedulerCompleted)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}
 			}
 			if c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeServer] != nil {
 				replicas := c.mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeServer].Replicas
-				err := updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeServer, int(*replicas), c.restart, c.schedulerCompleted)
+				err := ctr.updateStatusSingle(c.mxJob, mxv1.MXReplicaTypeServer, int(*replicas), c.restart, c.schedulerCompleted)
 				if err != nil {
 					t.Errorf("%s: Expected error %v to be nil", c.description, err)
 				}

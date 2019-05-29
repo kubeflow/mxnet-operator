@@ -42,6 +42,15 @@ type MXJob struct {
 
 // MXJobSpec is a desired state description of the MXJob.
 type MXJobSpec struct {
+	// Specifies the duration (in seconds) since startTime during which the job can remain active
+	// before it is terminated. Must be a positive integer.
+	// This setting applies only to pods where restartPolicy is OnFailure or Always.
+	// +optional
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+
+	// Number of retries before marking this job as failed.
+	// +optional
+	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 	// CleanPodPolicy defines the policy to kill pods after MXJob is
 	// succeeded.
 	// Default to Running.

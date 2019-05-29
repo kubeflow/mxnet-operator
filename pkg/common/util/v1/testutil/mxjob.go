@@ -53,6 +53,38 @@ func NewMXJobWithCleanupJobDelay(scheduler, worker, server int, ttl *int32) *mxv
 	return mxJob
 }
 
+func NewMXJobWithActiveDeadlineSeconds(scheduler, worker, ps int, ads *int64) *mxv1.MXJob {
+	if scheduler == 1 {
+		mxJob := NewMXJobWithScheduler(worker, ps)
+		mxJob.Spec.ActiveDeadlineSeconds = ads
+		policy := mxv1.CleanPodPolicyAll
+		mxJob.Spec.CleanPodPolicy = &policy
+		return mxJob
+	}
+	mxJob := NewMXJob(worker, ps)
+	mxJob.Spec.ActiveDeadlineSeconds = ads
+	policy := mxv1.CleanPodPolicyAll
+	mxJob.Spec.CleanPodPolicy = &policy
+	return mxJob
+}
+
+func NewMXJobWithBackoffLimit(scheduler, worker, ps int, backoffLimit *int32) *mxv1.MXJob {
+	if scheduler == 1 {
+		mxJob := NewMXJobWithScheduler(worker, ps)
+		mxJob.Spec.BackoffLimit = backoffLimit
+		mxJob.Spec.MXReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
+		policy := mxv1.CleanPodPolicyAll
+		mxJob.Spec.CleanPodPolicy = &policy
+		return mxJob
+	}
+	mxJob := NewMXJob(worker, ps)
+	mxJob.Spec.BackoffLimit = backoffLimit
+	mxJob.Spec.MXReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
+	policy := mxv1.CleanPodPolicyAll
+	mxJob.Spec.CleanPodPolicy = &policy
+	return mxJob
+}
+
 func NewMXJobWithScheduler(worker, server int) *mxv1.MXJob {
 	mxJob := NewMXJob(worker, server)
 	mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeScheduler] = &mxv1.MXReplicaSpec{
