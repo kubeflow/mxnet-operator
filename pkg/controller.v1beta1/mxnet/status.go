@@ -47,8 +47,8 @@ func updateStatusSingle(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, r
 
 	mxlogger.LoggerForJob(mxjob).Infof("MXJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
 		mxjob.Name, rtype, expected, running, failed)
-	// All workers are running, set StartTime.
-	if running == replicas && mxjob.Status.StartTime == nil {
+	// set StartTime.
+	if mxjob.Status.StartTime == nil {
 		now := metav1.Now()
 		mxjob.Status.StartTime = &now
 	}

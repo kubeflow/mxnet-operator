@@ -55,8 +55,8 @@ func (tc *MXController) updateStatusSingle(mxjob *mxv1.MXJob, rtype mxv1.MXRepli
 
 	mxlogger.LoggerForJob(mxjob).Infof("MXJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
 		mxjob.Name, rtype, expected, running, failed)
-	// All workers are running, set StartTime.
-	if running == replicas && mxjob.Status.StartTime == nil {
+	// set StartTime.
+	if mxjob.Status.StartTime == nil {
 		now := metav1.Now()
 		mxjob.Status.StartTime = &now
 		// enqueue a sync to check if job past ActiveDeadlineSeconds
