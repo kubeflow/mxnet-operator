@@ -71,6 +71,10 @@ required = [
   name = "k8s.io/apiserver"
   version = "kubernetes-1.11.2"
 
+[[override]]
+  name = "github.com/kubeflow/tf-operator"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true

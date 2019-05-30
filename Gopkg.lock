@@ -202,7 +202,8 @@
   version = "v1.1.5"
 
 [[projects]]
-  digest = "1:32d82e939ef9e194ee33e5b753b8921c8e5e9cc226b844c29ff13e82d6eb1cbf"
+  branch = "master"
+  digest = "1:0df945835624230e667036b9ca788dff4e66bf60970f477beef5c8fe40daf815"
   name = "github.com/kubeflow/tf-operator"
   packages = [
     "pkg/common/jobcontroller",
@@ -212,8 +213,7 @@
     "pkg/util/train",
   ]
   pruneopts = "NUT"
-  revision = "aa322c7b557f742743038a81de01c4629a7ebe9b"
-  version = "v0.5.0"
+  revision = "2f0d9597c07279283846be12336768acb7915ba5"
 
 [[projects]]
   digest = "1:680c0fba95a0cff934e350b1ad6774d8229378a3e37d9902e07e2861e82a5908"
@@ -846,13 +846,14 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/golang/glog",
     "github.com/golang/protobuf/proto",
     "github.com/kubeflow/tf-operator/pkg/common/jobcontroller",
     "github.com/kubeflow/tf-operator/pkg/control",
     "github.com/kubeflow/tf-operator/pkg/logger",
     "github.com/kubeflow/tf-operator/pkg/util/signals",
     "github.com/kubeflow/tf-operator/pkg/util/train",
+    "github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1",
+    "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned",
     "github.com/onrik/logrus/filename",
     "github.com/sirupsen/logrus",
     "k8s.io/api/core/v1",
