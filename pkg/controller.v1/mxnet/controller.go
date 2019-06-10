@@ -475,7 +475,7 @@ func (tc *MXController) pastBackoffLimit(mxjob *mxv1.MXJob, pods []*v1.Pod) (boo
 		}
 		for i := range pods {
 			po := pods[i]
-			if po.Status.Phase == v1.PodRunning || po.Status.Phase != v1.PodPending {
+			if po.Status.Phase == v1.PodRunning || po.Status.Phase == v1.PodPending {
 				for j := range po.Status.InitContainerStatuses {
 					stat := po.Status.InitContainerStatuses[j]
 					result += stat.RestartCount
