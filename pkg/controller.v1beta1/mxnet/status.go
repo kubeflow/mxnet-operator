@@ -201,8 +201,8 @@ func isFailed(status mxv1beta1.MXJobStatus) bool {
 // If the condition that we are about to add already exists
 // and has the same status and reason then we are not going to update.
 func setCondition(status *mxv1beta1.MXJobStatus, condition mxv1beta1.MXJobCondition) {
-	// Do nothing if MXJobStatus have failed condition
-	if isFailed(*status) {
+	// Do nothing if MXJobStatus is completed
+	if isFailed(*status) || isSucceeded(*status) {
 		return
 	}
 
