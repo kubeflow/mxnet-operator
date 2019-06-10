@@ -73,7 +73,7 @@ required = [
 
 [[override]]
   name = "github.com/kubeflow/tf-operator"
-  branch = "master"
+  version = "v0.5.3"
 
 [prune]
   go-tests = true
