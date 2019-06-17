@@ -188,7 +188,7 @@ func (tc *MXController) cleanupMXJob(mxJob *mxv1.MXJob) error {
 
 // deleteMXJob deletes the given MXJob.
 func (tc *MXController) deleteMXJob(mxJob *mxv1.MXJob) error {
-	return tc.mxJobClientSet.KubeflowV1beta1().MXJobs(mxJob.Namespace).Delete(mxJob.Name, &metav1.DeleteOptions{})
+	return tc.mxJobClientSet.KubeflowV1().MXJobs(mxJob.Namespace).Delete(mxJob.Name, &metav1.DeleteOptions{})
 }
 
 func getTotalReplicas(mxjob *mxv1.MXJob) int32 {
