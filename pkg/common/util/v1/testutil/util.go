@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	LabelGroupName = "group_name"
-	LabelMXJobName = "mxnet_job_name"
+	LabelGroupName = "group-name"
+	LabelMXJobName = "mxnet-job-name"
 )
 
 var (

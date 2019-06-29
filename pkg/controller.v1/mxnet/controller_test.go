@@ -436,7 +436,7 @@ func TestSyncPdb(t *testing.T) {
 					MinAvailable: &minAvailable2,
 					Selector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							"mxnet_job_name": "test-sync-pdb",
+							"mxnet-job-name": "test-sync-pdb",
 						},
 					},
 				},
