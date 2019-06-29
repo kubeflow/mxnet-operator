@@ -50,8 +50,8 @@ const (
 	// labels for pods and servers.
 	mxReplicaTypeLabel  = "mxnet-replica-type"
 	mxReplicaIndexLabel = "mxnet-replica-index"
-	labelGroupName      = "group_name"
-	labelMXJobName      = "mxnet_job_name"
+	labelGroupName      = "group-name"
+	labelMXJobName      = "mxnet-job-name"
 	labelMXJobRole      = "mxnet-job-role"
 )
 
