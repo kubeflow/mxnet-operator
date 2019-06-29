@@ -174,6 +174,12 @@ func (tc *MXController) createNewPod(mxjob *mxv1.MXJob, rt, index string, spec *
 		} else {
 			podTemplate.Spec.SchedulerName = gangSchedulerName
 		}
+
+		if podTemplate.Annotations == nil {
+			podTemplate.Annotations = map[string]string{}
+		}
+		// we create the podGroup with the same name as the mxjob
+		podTemplate.Annotations["scheduling.k8s.io/group-name"] = mxjob.Name
 	}
 
 	err = tc.PodControl.CreatePodsWithControllerRef(mxjob.Namespace, podTemplate, mxjob, controllerRef)
