@@ -38,13 +38,13 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible
 	github.com/sirupsen/logrus v1.0.6
 	github.com/spf13/pflag v1.0.2
-	golang.org/x/crypto v0.0.0-20180830192347-182538f80094
-	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d
+	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
-	golang.org/x/sys v0.0.0-20180831094639-fa5fdf94c789
+	golang.org/x/sys v0.0.0-20190312061237-fead79001313
 	golang.org/x/text v0.3.0
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
-	golang.org/x/tools v0.0.0-20180831211245-7ca132754999
+	golang.org/x/tools v0.0.0-20190328211700-ab21143f2384
 	google.golang.org/appengine v1.1.0
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/square/go-jose.v2 v2.3.1
@@ -54,8 +54,8 @@ require (
 	k8s.io/apimachinery v0.0.0-20180621070125-103fd098999d
 	k8s.io/apiserver v0.0.0-20180808060109-1844acd6a035
 	k8s.io/client-go v0.0.0-20180806134042-1f13a808da65
-	k8s.io/code-generator v0.0.0-20180621065459-6702109cc68e
-	k8s.io/gengo v0.0.0-20180813235010-4242d8e6c5db
+	k8s.io/code-generator v0.0.0-20190612205613-18da4a14b22b
+	k8s.io/gengo v0.0.0-20190116091435-f8a0810f38af
 	k8s.io/kube-openapi v0.0.0-20180509051205-7ee50c0aa805
 	k8s.io/kubernetes v1.11.10
 )
