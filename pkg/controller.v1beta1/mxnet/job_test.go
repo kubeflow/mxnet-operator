@@ -65,7 +65,9 @@ func TestAddMXJob(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run MXNet Controller!")
+		}
 	}
 	go run(stopCh)
 
@@ -134,7 +136,9 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 
 	stopCh := make(chan struct{})
 	run := func(<-chan struct{}) {
-		ctr.Run(testutil.ThreadCount, stopCh)
+		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
+			t.Errorf("Failed to run MXNet Controller!")
+		}
 	}
 	go run(stopCh)
 
