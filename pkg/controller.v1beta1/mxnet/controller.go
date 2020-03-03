@@ -107,7 +107,9 @@ func NewMXController(
 	mxJobInformerFactory mxjobinformers.SharedInformerFactory,
 	option options.ServerOption) *MXController {
 
-	mxjobscheme.AddToScheme(scheme.Scheme)
+	if err := mxjobscheme.AddToScheme(scheme.Scheme); err != nil {
+		log.Fatal("Cannot add mxjob scheme")
+	}
 
 	log.Info("Creating MXJob controller")
 	// Create new MXController.
