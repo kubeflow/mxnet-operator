@@ -29,8 +29,8 @@ CODEGEN_VERSION=$(grep 'k8s.io/code-generator' go.sum | awk '{print $2}' | head 
 CODEGEN_PKG=$(echo `go env GOPATH`"/pkg/mod/k8s.io/code-generator@${CODEGEN_VERSION}")
 
 if [[ ! -d ${CODEGEN_PKG} ]]; then
-    echo "${CODEGEN_PKG} is missing. Run 'go mod download'."
-    exit 1
+    echo "${CODEGEN_PKG} is missing. Running 'go mod download'."
+    go mod download
 fi
 
 echo ">> Using ${CODEGEN_PKG}"
