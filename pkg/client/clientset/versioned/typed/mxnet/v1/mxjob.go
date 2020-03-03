@@ -17,6 +17,8 @@
 package v1
 
 import (
+	"time"
+
 	v1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	scheme "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,11 +76,16 @@ func (c *mXJobs) Get(name string, options metav1.GetOptions) (result *v1.MXJob, 
 
 // List takes label and field selectors, and returns the list of MXJobs that match those selectors.
 func (c *mXJobs) List(opts metav1.ListOptions) (result *v1.MXJobList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	result = &v1.MXJobList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("mxjobs").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Do().
 		Into(result)
 	return
@@ -86,11 +93,16 @@ func (c *mXJobs) List(opts metav1.ListOptions) (result *v1.MXJobList, err error)
 
 // Watch returns a watch.Interface that watches the requested mXJobs.
 func (c *mXJobs) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
 		Resource("mxjobs").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Watch()
 }
 
@@ -148,10 +160,15 @@ func (c *mXJobs) Delete(name string, options *metav1.DeleteOptions) error {
 
 // DeleteCollection deletes a collection of objects.
 func (c *mXJobs) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+	var timeout time.Duration
+	if listOptions.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("mxjobs").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
+		Timeout(timeout).
 		Body(options).
 		Do().
 		Error()
