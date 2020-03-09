@@ -72,7 +72,7 @@ func (in *MXJobCondition) DeepCopy() *MXJobCondition {
 func (in *MXJobList) DeepCopyInto(out *MXJobList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]MXJob, len(*in))

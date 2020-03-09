@@ -16,6 +16,7 @@
 package mxnet
 
 import (
+	"context"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -62,12 +63,13 @@ func TestAddPod(t *testing.T) {
 	mxJobIndexer := ctr.mxJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
+	run := func(ctx context.Context) {
 		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
 			t.Errorf("Failed to run MXNet Controller!")
 		}
 	}
-	go run(stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	go run(ctx)
 
 	var key string
 	syncChan := make(chan string)
@@ -93,7 +95,7 @@ func TestAddPod(t *testing.T) {
 	if key != testutil.GetKey(mxJob, t) {
 		t.Errorf("Failed to enqueue the MXJob %s: expected %s, got %s", mxJob.Name, testutil.GetKey(mxJob, t), key)
 	}
-	close(stopCh)
+	cancel()
 }
 
 func TestRestartPolicy(t *testing.T) {
@@ -188,12 +190,13 @@ func TestExitCode(t *testing.T) {
 	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 
 	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
+	run := func(ctx context.Context) {
 		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
 			t.Errorf("Failed to run MXNet Controller!")
 		}
 	}
-	go run(stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	go run(ctx)
 
 	ctr.updateStatusHandler = func(mxJob *mxv1.MXJob) error {
 		return nil
@@ -238,5 +241,5 @@ func TestExitCode(t *testing.T) {
 	if !found {
 		t.Errorf("Failed to delete pod %s", pod.Name)
 	}
-	close(stopCh)
+	cancel()
 }

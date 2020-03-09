@@ -28,8 +28,6 @@ type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface
 	KubeflowV1() kubeflowv1.KubeflowV1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Kubeflow() kubeflowv1.KubeflowV1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -47,12 +45,6 @@ func (c *Clientset) KubeflowV1beta1() kubeflowv1beta1.KubeflowV1beta1Interface {
 
 // KubeflowV1 retrieves the KubeflowV1Client
 func (c *Clientset) KubeflowV1() kubeflowv1.KubeflowV1Interface {
-	return c.kubeflowV1
-}
-
-// Deprecated: Kubeflow retrieves the default version of KubeflowClient.
-// Please explicitly pick a version.
-func (c *Clientset) Kubeflow() kubeflowv1.KubeflowV1Interface {
 	return c.kubeflowV1
 }
 

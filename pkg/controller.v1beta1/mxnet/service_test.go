@@ -16,6 +16,7 @@
 package mxnet
 
 import (
+	"context"
 	"testing"
 
 	"k8s.io/api/core/v1"
@@ -62,13 +63,13 @@ func TestAddService(t *testing.T) {
 	mxJobIndexer := ctr.mxJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
+	run := func(ctx context.Context) {
 		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
 			t.Errorf("Failed to run MXNet Controller!")
 		}
 	}
-	go run(stopCh)
-
+	ctx, cancel := context.WithCancel(context.Background())
+	go run(ctx)
 	var key string
 	syncChan := make(chan string)
 	ctr.syncHandler = func(mxJobKey string) (bool, error) {
@@ -93,5 +94,5 @@ func TestAddService(t *testing.T) {
 	if key != testutil.GetKey(mxJob, t) {
 		t.Errorf("Failed to enqueue the MXJob %s: expected %s, got %s", mxJob.Name, testutil.GetKey(mxJob, t), key)
 	}
-	close(stopCh)
+	cancel()
 }

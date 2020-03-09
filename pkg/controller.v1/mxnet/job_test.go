@@ -15,6 +15,7 @@
 package mxnet
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -65,12 +66,13 @@ func TestAddMXJob(t *testing.T) {
 	mxJobIndexer := ctr.mxJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
+	run := func(ctx context.Context) {
 		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
 			t.Errorf("Failed to run MXNet Controller!")
 		}
 	}
-	go run(stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	go run(ctx)
 
 	var key string
 	syncChan := make(chan string)
@@ -100,7 +102,7 @@ func TestAddMXJob(t *testing.T) {
 	if key != testutil.GetKey(mxJob, t) {
 		t.Errorf("Failed to enqueue the MXJob %s: expected %s, got %s", mxJob.Name, testutil.GetKey(mxJob, t), key)
 	}
-	close(stopCh)
+	cancel()
 }
 
 func TestCopyLabelsAndAnnotation(t *testing.T) {
@@ -136,12 +138,13 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 	mxJobIndexer := ctr.mxJobInformer.GetIndexer()
 
 	stopCh := make(chan struct{})
-	run := func(<-chan struct{}) {
+	run := func(ctx context.Context) {
 		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
 			t.Errorf("Failed to run MXNet Controller!")
 		}
 	}
-	go run(stopCh)
+	ctx, cancel := context.WithCancel(context.Background())
+	go run(ctx)
 
 	ctr.updateStatusHandler = func(mxJob *mxv1.MXJob) error {
 		return nil
@@ -190,7 +193,7 @@ func TestCopyLabelsAndAnnotation(t *testing.T) {
 		t.Errorf("Annotations value does not equal")
 	}
 
-	close(stopCh)
+	cancel()
 }
 
 func TestDeletePodsAndServices(t *testing.T) {
