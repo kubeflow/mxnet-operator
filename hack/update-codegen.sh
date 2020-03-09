@@ -81,3 +81,5 @@ echo "Generating defaulters for v1"
 
 # Copy everything back.
 cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
+# Clean up binaries we build for update codegen
+rm ./defaulter-gen
