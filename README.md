@@ -1,17 +1,17 @@
-# mxnet-operator: a Kubernetes operator for mxnet jobs
+# mxnet-operator: Kubernetes operator for Apache MXNet jobs
 
 ## Overview
 
-MXJob provides a Kubernetes custom resource that makes it easy to
-run distributed or non-distributed MXNet jobs (training and tuning) on Kubernetes. 
+MXNet Operator provides a Kubernetes custom resource `MXJob` that makes it easy to
+run distributed or non-distributed [Apache MXNet](https://github.com/apache/incubator-mxnet) jobs (training and tuning) on Kubernetes. 
 Using a Custom Resource Definition (CRD) gives users the ability to create 
-and manage MX Jobs just like builtin K8S resources. 
+and manage Apache MXNet jobs just like built-in K8S resources. 
 
 ### Prerequisites
 
 - Kubernetes >= 1.8
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
-- MXNet >= v1.2.0
+- Apache MXNet >= v1.2.0
 
 ## Installing the MXJob CRD and operator on your k8s cluster
 
@@ -19,15 +19,15 @@ and manage MX Jobs just like builtin K8S resources.
 
 Please refer to the [kubeflow installation](https://www.kubeflow.org/docs/started/getting-started/).
 
-### Verify that MXNet support is included in your Kubeflow deployment
+### Verify that Apache MXNet support is included in your Kubeflow deployment
 
-Check that the MXNet custom resource is installed
+Check that the Apache MXNet custom resource is installed via:
 
 ```
 kubectl get crd
 ```
 
-The output should include `mxjobs.kubeflow.org`
+The output should include `mxjobs.kubeflow.org` like the following:
 
 ```
 NAME                                           AGE
@@ -36,7 +36,7 @@ mxjobs.kubeflow.org                            4d
 ...
 ```
 
-If it is not included you can add it as follows
+If it is not included you can add it as follows:
 
 ```
 cd ${KSONNET_APP}
@@ -45,7 +45,7 @@ ks generate mxnet-operator mxnet-operator
 ks apply default -c mxnet-operator
 ```
 
-As an alternative solution, you can deploy mxnet-operator bypass ksonnect
+As an alternative solution, you can deploy mxnet-operator bypass ksonnet
 
 ```
 kubectl create -f manifests/crd-v1beta1.yaml 
@@ -53,22 +53,22 @@ kubectl create -f manifests/rbac.yaml
 kubectl create -f manifests/deployment.yaml
 ```
 
-### Creating a MXNet training job
+### Creating a Apache MXNet training job
 
-You create a training job by defining a MXJob with MXTrain mode and then creating it with.
+You create a training job by defining a `MXJob` with `MXTrain` mode and then creating it with.
 
 ```
 kubectl create -f examples/v1beta1/train/mx_job_dist_gpu.yaml
 ```
 
-Each replicaSpec defines a set of MXNet processes.
-The mxReplicaType defines the semantics for the set of processes.
-The semantics are as follows
+Each `replicaSpec` defines a set of Apache MXNet processes.
+The `mxReplicaType` defines the semantics for the set of processes.
+The semantics are as follows:
 
 **scheduler**
   * A job must have 1 and only 1 scheduler
   * The pod must contain a container named mxnet
-  * The overall status of the MXJob is determined by the exit code of the
+  * The overall status of the `MXJob` is determined by the exit code of the
     mxnet container
       * 0 = success
       * 1 || 2 || 126 || 127 || 128 || 139 = permanent errors:
@@ -113,11 +113,11 @@ Before you use the auto-tuning example, there is some preparatory work need to b
 
 ### Using GPUs
 
-Mxnet-operator is now supporting the GPU training .
+MXNet Operator supports training with GPUs.
 
-Please verify your image is available for GPU distributed training .
+Please verify your image is available for distributed training with GPUs.
 
-For example ,
+For example, if you have the following, MXNet Operator will arrange the pod to nodes to satisfy the GPU limit.
 
 ```
 command: ["python"]
@@ -127,9 +127,7 @@ resources:
     nvidia.com/gpu: 1
 ```
 
-Mxnet-operator will arrange the pod to nodes which satisfied the GPU limit.
-
-### Monitoring your MXNet job
+### Monitoring your Apache MXNet job
 
 To get the status of your job
 
@@ -240,7 +238,7 @@ status:
 
 The first thing to note is the **RuntimeId**. This is a random unique
 string which is used to give names to all the K8s resouces
-(e.g Job controllers & services) that are created by the MXJob.
+(e.g Job controllers & services) that are created by the `MXJob`.
 
 As with other K8S resources status provides information about the state
 of the resource.
@@ -257,7 +255,7 @@ of the resource.
   - Succeeded
   - Failed
 
-For each replica type in the job, there will be a ReplicaStatus that
+For each replica type in the job, there will be a `ReplicaStatus` that
 provides the number of replicas of that type in each state.
 
 For each replica type, the job creates a set of K8s
@@ -268,8 +266,8 @@ named
 ${REPLICA-TYPE}-${RUNTIME_ID}-${INDEX}
 ```
 
-For example, if you have 2 servers and runtime id 76n0 MXJob
-will create the jobs
+For example, if you have 2 servers and the runtime id is "76n0", then `MXJob`
+will create the following two jobs:
 
 ```
 server-76no-0
@@ -278,8 +276,8 @@ server-76no-1
 
 ## Contributing
 
-Please refer to the [Contributing Document](./CONTRIBUTING.md)
+Please refer to the [this document](./CONTRIBUTING.md) for contributing guidelines.
 
 ## Community
 
-This is a part of Kubeflow, so please see [readme in kubeflow/kubeflow](https://github.com/kubeflow/kubeflow#get-involved) to get in touch with the community.
+Please check out [Kubeflow community page](https://www.kubeflow.org/docs/about/community/) for more information on how to get involved in our community.
