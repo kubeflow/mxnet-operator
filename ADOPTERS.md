@@ -8,3 +8,4 @@ This page contains a list of organizations who are using MXNet Operator. If you'
 | [Caicloud](https://caicloud.io/) | [Ce Gao](https://github.com/gaocegege) |
 | [Huawei](https://www.huawei.com/) | [Lei Su](https://github.com/suleisl2000) |
 | [Qihoo 360](https://www.360.cn/) | [Xigang Wang](https://github.com/xigang) |
+| [TuSimple](https://www.tusimple.com/) | [Hengliang He](https://github.com/henglianghe) |
