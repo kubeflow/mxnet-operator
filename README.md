@@ -58,7 +58,7 @@ kubectl create -f manifests/deployment.yaml
 You create a training job by defining a `MXJob` with `MXTrain` mode and then creating it with.
 
 ```
-kubectl create -f examples/v1beta1/train/mx_job_dist_gpu.yaml
+kubectl create -f examples/train/mx_job_dist_gpu_v1beta1.yaml
 ```
 
 Each `replicaSpec` defines a set of Apache MXNet processes.
@@ -106,10 +106,10 @@ should be created for each replica.
 You can create a auto tuning job by define a type of MXTune job and then creating it with
 
 ```
-kubectl create -f examples/v1beta1/tune/mx_job_tune_gpu.yaml
+kubectl create -f examples/tune/mx_job_tune_gpu_v1beta1.yaml
 ```
 
-Before you use the auto-tuning example, there is some preparatory work need to be finished in advance. To let TVM tune your network, you should create a docker image which has TVM module. Then, you need a auto-tuning script to specify which network will be tuned and set the auto-tuning parameters, For more details, please see https://docs.tvm.ai/tutorials/autotvm/tune_relay_mobile_gpu.html#sphx-glr-tutorials-autotvm-tune-relay-mobile-gpu-py. Finally, you need a startup script to start the auto-tuning program. In fact, mxnet-operator will set all the parameters as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning script. We provide an example under examples/v1beta1/tune/, tuning result will be saved in a log file like resnet-18.log in the example we gave. You can refer it for details.
+Before you use the auto-tuning example, there is some preparatory work need to be finished in advance. To let TVM tune your network, you should create a docker image which has TVM module. Then, you need a auto-tuning script to specify which network will be tuned and set the auto-tuning parameters, For more details, please see https://docs.tvm.ai/tutorials/autotvm/tune_relay_mobile_gpu.html#sphx-glr-tutorials-autotvm-tune-relay-mobile-gpu-py. Finally, you need a startup script to start the auto-tuning program. In fact, mxnet-operator will set all the parameters as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning script. We provide an example under examples/tune/, tuning result will be saved in a log file like resnet-18.log in the example we gave. You can refer it for details.
 
 ### Using GPUs
 
