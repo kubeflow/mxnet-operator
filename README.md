@@ -10,16 +10,18 @@ and manage Apache MXNet jobs just like built-in K8S resources.
 ### Prerequisites
 
 - Kubernetes >= 1.8
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl) >= 1.14
 - Apache MXNet >= v1.2.0
 
 ## Installing the MXJob CRD and operator on your k8s cluster
 
-### Deploy Kubeflow
+### Deploy MXJob CRD and Apache MXNet Operator
 
-Please refer to the [kubeflow installation](https://www.kubeflow.org/docs/started/getting-started/).
+```
+kubectl create -k manifests
+```
 
-### Verify that Apache MXNet support is included in your Kubeflow deployment
+### Verify that MXJob CRD and Apache MXNet Operator are installed
 
 Check that the Apache MXNet custom resource is installed via:
 
@@ -36,23 +38,17 @@ mxjobs.kubeflow.org                            4d
 ...
 ```
 
-If it is not included you can add it as follows:
+Check that the Apache MXNet operator is running via:
 
 ```
-cd ${KSONNET_APP}
-ks pkg install kubeflow/mxnet-job
-ks generate mxnet-operator mxnet-operator
-ks apply default -c mxnet-operator
+kubectl get pods
 ```
 
-As an alternative solution, you can deploy mxnet-operator bypass ksonnet
+The output should include `mxnet-operaror-xxx` like the following:
 
 ```
-kubectl create -f manifests/crd-v1beta1.yaml 
-kubectl create -f manifests/service-account.yaml
-kubectl create -f manifests/cluster-role.yaml
-kubectl create -f manifests/cluster-role-binding.yaml
-kubectl create -f manifests/deployment.yaml
+NAME                             READY   STATUS    RESTARTS   AGE
+mxnet-operator-d466b46bc-xbqvs   1/1     Running   0          4m37s
 ```
 
 ### Creating a Apache MXNet training job
