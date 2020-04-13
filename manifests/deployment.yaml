@@ -3,17 +3,18 @@ kind: Deployment
 metadata:
   name: mxnet-operator
   labels:
-    name: mxnet-operator
+    app: mxnet-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: mxnet-operator
+      app: mxnet-operator
   template:
     metadata:
       labels:
-        name: mxnet-operator
+        app: mxnet-operator
     spec:
+      serviceAccountName: mxnet-operator
       containers:
       - name: mxnet-operator
         image: mxjob/mxnet-operator:v1beta1

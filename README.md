@@ -49,7 +49,9 @@ As an alternative solution, you can deploy mxnet-operator bypass ksonnet
 
 ```
 kubectl create -f manifests/crd-v1beta1.yaml 
-kubectl create -f manifests/rbac.yaml 
+kubectl create -f manifests/service-account.yaml
+kubectl create -f manifests/cluster-role.yaml
+kubectl create -f manifests/cluster-role-binding.yaml
 kubectl create -f manifests/deployment.yaml
 ```
 
