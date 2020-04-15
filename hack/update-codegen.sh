@@ -25,7 +25,7 @@ SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 ROOT_PKG=github.com/kubeflow/mxnet-operator
 
 # Grab code-generator version from go.sum
-CODEGEN_VERSION=$(grep 'k8s.io/code-generator' go.sum | awk '{print $2}' | head -1)
+CODEGEN_VERSION=$(grep 'k8s.io/code-generator' go.sum | awk '{print $2}' | sed 's/\/go.mod//g' | head -1)
 CODEGEN_PKG=$(echo `go env GOPATH`"/pkg/mod/k8s.io/code-generator@${CODEGEN_VERSION}")
 
 if [[ ! -d ${CODEGEN_PKG} ]]; then
