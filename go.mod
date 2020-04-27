@@ -72,6 +72,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
 	k8s.io/kubernetes v1.16.2
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
+	volcano.sh/volcano v0.4.0
 )
 
 replace (
