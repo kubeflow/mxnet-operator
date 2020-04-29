@@ -15,6 +15,7 @@
 package v1
 
 import (
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"strings"
 
 	"k8s.io/api/core/v1"
@@ -56,7 +57,7 @@ func setDefaultPort(spec *v1.PodSpec) {
 	}
 }
 
-func setDefaultReplicas(spec *MXReplicaSpec) {
+func setDefaultReplicas(spec *commonv1.ReplicaSpec) {
 	if spec.Replicas == nil {
 		spec.Replicas = Int32(1)
 	}
@@ -74,7 +75,7 @@ func setTypeNamesToCamelCase(mxJob *MXJob) {
 
 // setTypeNameToCamelCase sets the name of the replica type from any case to correct case.
 // E.g. from server to Server; from WORKER to Worker.
-func setTypeNameToCamelCase(mxJob *MXJob, typ MXReplicaType) {
+func setTypeNameToCamelCase(mxJob *MXJob, typ commonv1.ReplicaType) {
 	for t := range mxJob.Spec.MXReplicaSpecs {
 		if strings.EqualFold(string(t), string(typ)) && t != typ {
 			spec := mxJob.Spec.MXReplicaSpecs[t]
@@ -88,9 +89,9 @@ func setTypeNameToCamelCase(mxJob *MXJob, typ MXReplicaType) {
 // SetDefaults_MXJob sets any unspecified values to defaults.
 func SetDefaults_MXJob(mxjob *MXJob) {
 	// Set default cleanpod policy to All.
-	if mxjob.Spec.CleanPodPolicy == nil {
-		all := CleanPodPolicyAll
-		mxjob.Spec.CleanPodPolicy = &all
+	if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
+		all := commonv1.CleanPodPolicyAll
+		mxjob.Spec.RunPolicy.CleanPodPolicy = &all
 	}
 
 	// Update the key of MXReplicaSpecs to camel case.

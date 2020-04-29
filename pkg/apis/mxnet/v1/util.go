@@ -14,7 +14,9 @@
 
 package v1
 
+import commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+
 // IsScheduler returns true if the type is Scheduler.
-func IsScheduler(typ MXReplicaType) bool {
+func IsScheduler(typ commonv1.ReplicaType) bool {
 	return typ == MXReplicaTypeScheduler
 }
