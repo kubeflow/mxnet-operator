@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"net/http"
 
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
+	mxlogger "github.com/kubeflow/common/pkg/util"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,7 +47,7 @@ func NewCRDRestClient(version *schema.GroupVersion) (*CRDRestClient, error) {
 	config.GroupVersion = version
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: scheme.Codecs}
 
 	restcli, err := rest.RESTClientFor(config)
 	if err != nil {

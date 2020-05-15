@@ -41,7 +41,7 @@ import (
 	"github.com/kubeflow/mxnet-operator/pkg/util/k8sutil"
 	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
 	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 )
 
 const (
