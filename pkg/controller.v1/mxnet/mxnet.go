@@ -20,8 +20,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kubeflow/common/pkg/controller.v1/common"
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
+)
+
+const (
+	// Label is used as tunerServerKey, it's designed for tvm auto-tuning.
+	mxJobTunerServerKey = "tuner-server-key"
 )
 
 // MXConfig is a struct representing the distributed Mxnet config.
@@ -37,9 +42,9 @@ type MXConfig struct {
 }
 
 // ClusterSpec represents a cluster Mxnet specification.
-type ClusterSpec map[string][]Url_Port
+type ClusterSpec map[string][]UrlPort
 
-type Url_Port struct {
+type UrlPort struct {
 	Url  string `json:"url"`
 	Port int    `json:"port"`
 }
@@ -88,15 +93,15 @@ func genClusterSpec(mxjob *mxv1.MXJob) (ClusterSpec, error) {
 
 	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
 		rt := strings.ToLower(string(rtype))
-		replicaNames := make([]Url_Port, 0, *spec.Replicas)
+		replicaNames := make([]UrlPort, 0, *spec.Replicas)
 
 		port, err := GetPortFromMXJob(mxjob, rtype)
 		if err != nil {
 			return nil, err
 		}
 		for i := int32(0); i < *spec.Replicas; i++ {
-			host := Url_Port{
-				Url:  jobcontroller.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", i)),
+			host := UrlPort{
+				Url:  common.GenGeneralName(mxjob.Name, rt, fmt.Sprintf("%d", i)),
 				Port: int(port),
 			}
 			replicaNames = append(replicaNames, host)
@@ -115,7 +120,7 @@ func genLabelsSpec(mxjob *mxv1.MXJob) (LabelsSpec, error) {
 	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
 		rt := strings.ToLower(string(rtype))
 
-		labelsSpec[rt] = spec.Label
+		labelsSpec[rt] = spec.Template.Annotations[mxJobTunerServerKey]
 	}
 
 	return labelsSpec, nil

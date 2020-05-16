@@ -17,7 +17,6 @@ package mxnet
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -31,6 +30,10 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"github.com/kubeflow/common/pkg/controller.v1/common"
+	"github.com/kubeflow/common/pkg/controller.v1/expectation"
+	mxlogger "github.com/kubeflow/common/pkg/util"
 	"github.com/kubeflow/mxnet-operator/cmd/mxnet-operator.v1/app/options"
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
@@ -38,9 +41,6 @@ import (
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/mxnet/v1"
 	mxjoblisters "github.com/kubeflow/mxnet-operator/pkg/client/listers/mxnet/v1"
-	"github.com/kubeflow/mxnet-operator/pkg/util/k8sutil"
-	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 )
 
@@ -62,16 +62,19 @@ var (
 	KeyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
 
 	// DefaultMXControllerConfiguration is the suggested mxnet-operator configuration for production.
-	DefaultMXControllerConfiguration = jobcontroller.JobControllerConfiguration{
+	DefaultMXControllerConfiguration = common.JobControllerConfiguration{
 		ReconcilerSyncLoopPeriod: metav1.Duration{Duration: 15 * time.Second},
 		EnableGangScheduling:     false,
 	}
+
+	// DefaultCleanPodPolicy is the default clean pod policy controller assign the new Job if not exist
+	DefaultCleanPodPolicy = commonv1.CleanPodPolicyNone
 )
 
 // MXController is the type for MXJob Controller, which manages
 // the lifecycle of MXJobs.
 type MXController struct {
-	jobcontroller.JobController
+	common.JobController
 
 	// mxJobClientSet is a clientset for CRD MXJob.
 	mxJobClientSet mxjobclientset.Interface
@@ -102,7 +105,7 @@ func NewMXController(
 	mxJobInformer mxjobinformersv1.MXJobInformer,
 	kubeClientSet kubeclientset.Interface,
 	mxJobClientSet mxjobclientset.Interface,
-	kubeBatchClientSet kubebatchclient.Interface,
+	volcanoClientSet volcanoclient.Interface,
 	kubeInformerFactory kubeinformers.SharedInformerFactory,
 	// This field is not used now but we keep it since it will be used
 	// after we support CRD validation.
@@ -121,12 +124,12 @@ func NewMXController(
 
 	// Create base controller
 	log.Info("Creating Job controller")
-	jc := jobcontroller.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
-		option.EnableGangScheduling, kubeClientSet, kubeBatchClientSet, kubeInformerFactory, mxv1.Plural)
-	tc.JobController = jc
+	jc := common.NewJobController(tc, metav1.Duration{Duration: 15 * time.Second},
+		option.EnableGangScheduling, kubeClientSet, volcanoClientSet, kubeInformerFactory, mxv1.Plural)
 	// Set sync handler.
 	tc.syncHandler = tc.syncMXJob
-	tc.updateStatusHandler = tc.updateMXJobStatus
+	// TODO: we may not need it
+	//tc.updateStatusHandler = tc.UpdateJobStatusInApiServer
 	// set delete handler.
 	tc.deleteMXJobHandler = tc.deleteMXJob
 	// Set up an event handler for when mxjob resources change.
@@ -152,8 +155,8 @@ func NewMXController(
 		DeleteFunc: jc.DeletePod,
 	})
 
-	tc.PodLister = podInformer.Lister()
-	tc.PodInformerSynced = podInformer.Informer().HasSynced
+	jc.PodLister = podInformer.Lister()
+	jc.PodInformerSynced = podInformer.Informer().HasSynced
 
 	// Create service informer.
 	serviceInformer := kubeInformerFactory.Core().V1().Services()
@@ -165,8 +168,10 @@ func NewMXController(
 		DeleteFunc: jc.DeleteService,
 	})
 
-	tc.ServiceLister = serviceInformer.Lister()
-	tc.ServiceInformerSynced = serviceInformer.Informer().HasSynced
+	jc.ServiceLister = serviceInformer.Lister()
+	jc.ServiceInformerSynced = serviceInformer.Informer().HasSynced
+
+	tc.JobController = jc
 
 	return tc
 }
@@ -315,9 +320,14 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	// Set default for the new mxjob.
 	scheme.Scheme.Default(mxjob)
 
+	// TODO(Jeffwan): move to defaulters.
+	if mxjob.Spec.RunPolicy.CleanPodPolicy == nil {
+		mxjob.Spec.RunPolicy.CleanPodPolicy = &DefaultCleanPodPolicy
+	}
+
 	var reconcileMXJobsErr error
 	if mxjobNeedsSync && mxjob.DeletionTimestamp == nil {
-		reconcileMXJobsErr = tc.reconcileMXJobs(mxjob)
+		reconcileMXJobsErr = tc.ReconcileJobs(mxjob, mxjob.Spec.MXReplicaSpecs, mxjob.Status, &mxjob.Spec.RunPolicy)
 	}
 
 	if reconcileMXJobsErr != nil {
@@ -325,203 +335,6 @@ func (tc *MXController) syncMXJob(key string) (bool, error) {
 	}
 
 	return true, err
-}
-
-// reconcileMXJobs checks and updates replicas for each given MXReplicaSpec.
-// It will requeue the mxjob in case of an error while creating/deleting pods/services.
-func (tc *MXController) reconcileMXJobs(mxjob *mxv1.MXJob) error {
-	mxjobKey, err := KeyFunc(mxjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
-		return err
-	}
-
-	logger := mxlogger.LoggerForJob(mxjob)
-	logger.Infof("Reconcile MXJobs %s", mxjob.Name)
-
-	pods, err := tc.GetPodsForJob(mxjob)
-	if err != nil {
-		logger.Warnf("getPodsForMXJob error %v", err)
-		return err
-	}
-
-	services, err := tc.GetServicesForJob(mxjob)
-	if err != nil {
-		logger.Warnf("getServicesForMXJob error %v", err)
-		return err
-	}
-
-	// If the MXJob is terminated, delete all pods and services.
-	if isSucceeded(mxjob.Status) || isFailed(mxjob.Status) {
-		if err := tc.deletePodsAndServices(mxjob, pods); err != nil {
-			return err
-		}
-
-		if err := tc.cleanupMXJob(mxjob); err != nil {
-			return err
-		}
-
-		if tc.Config.EnableGangScheduling {
-			if err := tc.DeletePodGroup(mxjob); err != nil {
-				return err
-			}
-		}
-
-		// Initialize the status.
-		initializeMXReplicaStatuses(mxjob, mxv1.MXReplicaTypeScheduler)
-		initializeMXReplicaStatuses(mxjob, mxv1.MXReplicaTypeWorker)
-		initializeMXReplicaStatuses(mxjob, mxv1.MXReplicaTypeServer)
-		return tc.updateStatusHandler(mxjob)
-	}
-
-	// retrieve the previous number of retry
-	previousRetry := tc.WorkQueue.NumRequeues(mxjobKey)
-
-	activePods := k8sutil.FilterActivePods(pods)
-	active := int32(len(activePods))
-	failed := k8sutil.FilterPodCount(pods, v1.PodFailed)
-	totalReplicas := getTotalReplicas(mxjob)
-	prevReplicasFailedNum := getTotalFailedReplicas(mxjob)
-
-	var failureMessage string
-	mxJobExceedsLimit := false
-	exceedsBackoffLimit := false
-	pastBackoffLimit := false
-
-	if mxjob.Spec.BackoffLimit != nil {
-		jobHasNewFailure := failed > prevReplicasFailedNum
-		// new failures happen when status does not reflect the failures and active
-		// is different than parallelism, otherwise the previous controller loop
-		// failed updating status so even if we pick up failure it is not a new one
-		exceedsBackoffLimit = jobHasNewFailure && (active != totalReplicas) &&
-			(int32(previousRetry)+1 > *mxjob.Spec.BackoffLimit)
-
-		pastBackoffLimit, err = tc.pastBackoffLimit(mxjob, pods)
-		if err != nil {
-			return err
-		}
-	}
-
-	if exceedsBackoffLimit || pastBackoffLimit {
-		// check if the number of pod restart exceeds backoff (for restart OnFailure only)
-		// OR if the number of failed jobs increased since the last syncJob
-		mxJobExceedsLimit = true
-		failureMessage = fmt.Sprintf("MXJob %s has failed because it has reached the specified backoff limit", mxjob.Name)
-	} else if tc.pastActiveDeadline(mxjob) {
-		failureMessage = fmt.Sprintf("MXJob %s has failed because it was active longer than specified deadline", mxjob.Name)
-		mxJobExceedsLimit = true
-	}
-
-	if mxJobExceedsLimit {
-		// If the MXJob exceeds backoff limit or is past active deadline
-		// delete all pods and services, then set the status to failed
-		if err := tc.deletePodsAndServices(mxjob, pods); err != nil {
-			return err
-		}
-
-		if err := tc.cleanupMXJob(mxjob); err != nil {
-			return err
-		}
-
-		if tc.Config.EnableGangScheduling {
-			if err := tc.DeletePodGroup(mxjob); err != nil {
-				return err
-			}
-		}
-
-		tc.Recorder.Event(mxjob, v1.EventTypeNormal, mxJobFailedReason, failureMessage)
-		if mxjob.Status.CompletionTime == nil {
-			now := metav1.Now()
-			mxjob.Status.CompletionTime = &now
-		}
-		err := updateMXJobConditions(mxjob, mxv1.MXJobFailed, mxJobFailedReason, failureMessage)
-		if err != nil {
-			mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
-			return err
-		}
-	} else {
-		if tc.Config.EnableGangScheduling {
-			minAvailableReplicas := getTotalReplicas(mxjob)
-			_, err := tc.SyncPodGroup(mxjob, minAvailableReplicas)
-			if err != nil {
-				logger.Warnf("Sync PodGroup %v: %v", mxjob.Name, err)
-			}
-		}
-
-		// Save the current state of the replicas
-		replicasStatus := make(map[string]v1.PodPhase)
-
-		// Diff current active pods/services with replicas.
-		for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
-			err = tc.reconcilePods(mxjob, pods, rtype, spec, replicasStatus)
-			if err != nil {
-				logger.Warnf("reconcilePods error %v", err)
-				return err
-			}
-
-			err = tc.reconcileServices(mxjob, services, rtype, spec)
-
-			if err != nil {
-				logger.Warnf("reconcileServices error %v", err)
-				return err
-			}
-		}
-	}
-
-	// TODO(CPH): Add check here, no need to update the mxjob if the status hasn't changed since last time.
-	return tc.updateStatusHandler(mxjob)
-}
-
-// pastBackoffLimit checks if container restartCounts sum exceeds BackoffLimit
-// this method applies only to pods with restartPolicy == OnFailure or Always
-func (tc *MXController) pastBackoffLimit(mxjob *mxv1.MXJob, pods []*v1.Pod) (bool, error) {
-	if mxjob.Spec.BackoffLimit == nil {
-		return false, nil
-	}
-	logger := mxlogger.LoggerForJob(mxjob)
-	result := int32(0)
-	for rtype, spec := range mxjob.Spec.MXReplicaSpecs {
-		if spec.RestartPolicy != mxv1.RestartPolicyOnFailure && spec.RestartPolicy != mxv1.RestartPolicyAlways {
-			logger.Warnf("The restart policy of replica %v of the job %v is not OnFailure or Always. Not counted in backoff limit.", rtype, mxjob.Name)
-			continue
-		}
-		// Convert TFReplicaType to lower string.
-		rt := strings.ToLower(string(rtype))
-		pods, err := tc.FilterPodsForReplicaType(pods, rt)
-		if err != nil {
-			return false, err
-		}
-		for i := range pods {
-			po := pods[i]
-			if po.Status.Phase == v1.PodRunning || po.Status.Phase == v1.PodPending {
-				for j := range po.Status.InitContainerStatuses {
-					stat := po.Status.InitContainerStatuses[j]
-					result += stat.RestartCount
-				}
-				for j := range po.Status.ContainerStatuses {
-					stat := po.Status.ContainerStatuses[j]
-					result += stat.RestartCount
-				}
-			}
-		}
-	}
-
-	if *mxjob.Spec.BackoffLimit == 0 {
-		return result > 0, nil
-	}
-	return result >= *mxjob.Spec.BackoffLimit, nil
-}
-
-// pastActiveDeadline checks if job has ActiveDeadlineSeconds field set and if it is exceeded.
-func (tc *MXController) pastActiveDeadline(mxjob *mxv1.MXJob) bool {
-	if mxjob.Spec.ActiveDeadlineSeconds == nil || mxjob.Status.StartTime == nil {
-		return false
-	}
-	now := metav1.Now()
-	start := mxjob.Status.StartTime.Time
-	duration := now.Time.Sub(start)
-	allowedDuration := time.Duration(*mxjob.Spec.ActiveDeadlineSeconds) * time.Second
-	return duration >= allowedDuration
 }
 
 // inspectMXjob make sure a MXjob has all the necessary MXReplicaSpecs members for a special jobMode.
@@ -550,7 +363,7 @@ func (tc *MXController) inspectMXjob(mxjob *mxv1.MXJob) error {
 		}
 		if s, ok := mxjob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeTunerServer]; !ok {
 			return errWrongJobMode
-		} else if s.Label == "" {
+		} else if s.Template.Annotations[mxJobTunerServerKey] == "" {
 			logger.Warnf("MXReplicaTypeTunerRPCServer may need label to set tvm rpc-server key")
 		}
 		if _, ok := mxjob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeTuner]; !ok {
@@ -573,11 +386,11 @@ func (tc *MXController) satisfiedExpectations(mxjob *mxv1.MXJob) bool {
 
 	for rtype := range mxjob.Spec.MXReplicaSpecs {
 		// Check the expectations of the pods.
-		expectationPodsKey := jobcontroller.GenExpectationPodsKey(mxjobKey, string(rtype))
+		expectationPodsKey := expectation.GenExpectationPodsKey(mxjobKey, string(rtype))
 		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationPodsKey)
 
 		// Check the expectations of the services.
-		expectationServicesKey := jobcontroller.GenExpectationServicesKey(mxjobKey, string(rtype))
+		expectationServicesKey := expectation.GenExpectationServicesKey(mxjobKey, string(rtype))
 		satisfied = satisfied || tc.Expectations.SatisfiedExpectations(expectationServicesKey)
 	}
 
@@ -592,24 +405,12 @@ func (tc *MXController) GetJobFromAPIClient(namespace, name string) (metav1.Obje
 	return tc.mxJobClientSet.KubeflowV1beta1().MXJobs(namespace).Get(name, metav1.GetOptions{})
 }
 
-func (tc *MXController) GetAPIGroupVersionKind() schema.GroupVersionKind {
-	return mxv1.SchemeGroupVersionKind
-}
-
-func (tc *MXController) GetAPIGroupVersion() schema.GroupVersion {
-	return mxv1.SchemeGroupVersion
-}
-
 func (tc *MXController) GetGroupNameLabelKey() string {
 	return labelGroupName
 }
 
 func (tc *MXController) GetJobNameLabelKey() string {
 	return labelMXJobName
-}
-
-func (tc *MXController) GetGroupNameLabelValue() string {
-	return mxv1.GroupName
 }
 
 func (tc *MXController) GetReplicaTypeLabelKey() string {
@@ -624,6 +425,30 @@ func (tc *MXController) ControllerName() string {
 	return controllerName
 }
 
+func (tc *MXController) GetAPIGroupVersionKind() schema.GroupVersionKind {
+	return mxv1.SchemeGroupVersionKind
+}
+
+func (tc *MXController) GetAPIGroupVersion() schema.GroupVersion {
+	return mxv1.SchemeGroupVersion
+}
+
+func (tc *MXController) GetGroupNameLabelValue() string {
+	return mxv1.GroupName
+}
+
+func (tc *MXController) GetDefaultContainerName() string {
+	return "mxnet"
+}
+
+func (tc *MXController) GetDefaultContainerPortName() string {
+	return ""
+}
+
 func (tc *MXController) GetJobRoleKey() string {
 	return labelMXJobRole
+}
+
+func (tc *MXController) IsMasterRole(replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, rtype commonv1.ReplicaType, index int) bool {
+	return string(rtype) == string(mxv1.MXReplicaTypeServer)
 }

@@ -17,111 +17,42 @@ package mxnet
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
-	"github.com/kubeflow/tf-operator/pkg/common/jobcontroller"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
-// reconcileServices checks and updates services for each given MXReplicaSpec.
-// It will requeue the mxjob in case of an error while creating/deleting services.
-func (tc *MXController) reconcileServices(
-	mxjob *mxv1.MXJob,
-	services []*v1.Service,
-	rtype mxv1.MXReplicaType,
-	spec *mxv1.MXReplicaSpec) error {
+func (tc *MXController) GetServicesForJob(job interface{}) ([]*corev1.Service, error) {
+	mxJob, ok := job.(*mxv1.MXJob)
+	if !ok {
+		return nil, fmt.Errorf("%v is not a type of MXJob", mxJob)
+	}
 
-	// Convert MXReplicaType to lower string.
-	rt := strings.ToLower(string(rtype))
+	//log := mxlogger.LoggerForJob(mxJob)
+	// List all services to include those that don't match the selector anymore
+	// but have a ControllerRef pointing to this controller.
 
-	replicas := int(*spec.Replicas)
-	// Get all services for the type rt.
-	services, err := tc.FilterServicesForReplicaType(services, rt)
+	labelSelector := metav1.LabelSelector{MatchLabels: tc.JobController.GenLabels(mxJob.Name)}
+	opts := metav1.ListOptions{
+		LabelSelector: labels.Set(labelSelector.MatchLabels).String(),
+	}
+	svclist, err := tc.KubeClientSet.CoreV1().Services(mxJob.Namespace).List(opts)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	serviceSlices := tc.GetServiceSlices(services, replicas, mxlogger.LoggerForReplica(mxjob, rt))
-
-	for index, serviceSlice := range serviceSlices {
-		if len(serviceSlice) > 1 {
-			mxlogger.LoggerForReplica(mxjob, rt).Warningf("We have too many services for %s %d", rt, index)
-			// TODO(gaocegege): Kill some services.
-		} else if len(serviceSlice) == 0 {
-			mxlogger.LoggerForReplica(mxjob, rt).Infof("need to create new service: %s-%d", rt, index)
-			err = tc.createNewService(mxjob, rtype, strconv.Itoa(index), spec)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return convertServiceList(svclist.Items), nil
 }
 
-// createNewService creates a new service for the given index and type.
-func (tc *MXController) createNewService(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType, index string, spec *mxv1.MXReplicaSpec) error {
-	mxjobKey, err := KeyFunc(mxjob)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
-		return err
-	}
-
-	// Convert MXReplicaType to lower string.
-	rt := strings.ToLower(string(rtype))
-	expectationServicesKey := jobcontroller.GenExpectationServicesKey(mxjobKey, rt)
-	err = tc.Expectations.ExpectCreations(expectationServicesKey, 1)
-	if err != nil {
-		return err
-	}
-
-	// Create OwnerReference.
-	controllerRef := tc.GenOwnerReference(mxjob)
-
-	// Append mxReplicaTypeLabel and mxReplicaIndexLabel labels.
-	labels := tc.GenLabels(mxjob.Name)
-	labels[mxReplicaTypeLabel] = rt
-	labels[mxReplicaIndexLabel] = index
-
-	port, err := GetPortFromMXJob(mxjob, rtype)
-	if err != nil {
-		return err
-	}
-
-	service := &v1.Service{
-		Spec: v1.ServiceSpec{
-			ClusterIP: "None",
-			Selector:  labels,
-			Ports: []v1.ServicePort{
-				{
-					Name: mxv1.DefaultPortName,
-					Port: port,
-				},
-			},
-		},
-	}
-
-	service.Name = jobcontroller.GenGeneralName(mxjob.Name, rt, index)
-	service.Labels = labels
-
-	err = tc.ServiceControl.CreateServicesWithControllerRef(mxjob.Namespace, service, mxjob, controllerRef)
-	if err != nil && errors.IsTimeout(err) {
-		// Service is created but its initialization has timed out.
-		// If the initialization is successful eventually, the
-		// controller will observe the creation via the informer.
-		// If the initialization fails, or if the service keeps
-		// uninitialized for a long time, the informer will not
-		// receive any update, and the controller will create a new
-		// service when the expectation expires.
+// convertServiceList convert service list to service point list
+func convertServiceList(list []corev1.Service) []*corev1.Service {
+	if list == nil {
 		return nil
-	} else if err != nil {
-		return err
 	}
-	return nil
+	ret := make([]*corev1.Service, 0, len(list))
+	for i := range list {
+		ret = append(ret, &list[i])
+	}
+	return ret
 }

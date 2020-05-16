@@ -16,6 +16,7 @@ package testutil
 
 import (
 	"encoding/json"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"strings"
 	"testing"
 
@@ -83,7 +84,7 @@ func GetKey(mxJob *mxv1.MXJob, t *testing.T) string {
 	return key
 }
 
-func CheckCondition(mxJob *mxv1.MXJob, condition mxv1.MXJobConditionType, reason string) bool {
+func CheckCondition(mxJob *mxv1.MXJob, condition commonv1.JobConditionType, reason string) bool {
 	for _, v := range mxJob.Status.Conditions {
 		if v.Type == condition && v.Status == v1.ConditionTrue && v.Reason == reason {
 			return true

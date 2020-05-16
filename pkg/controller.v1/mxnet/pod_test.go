@@ -16,98 +16,24 @@
 package mxnet
 
 import (
-	"context"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
-	kubeclientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/controller"
-
-	"github.com/kubeflow/mxnet-operator/cmd/mxnet-operator.v1/app/options"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
-	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1/testutil"
-	batchv1alpha1 "github.com/kubernetes-sigs/kube-batch/pkg/apis/scheduling/v1alpha1"
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
 )
-
-func TestAddPod(t *testing.T) {
-	// Prepare the clientset and controller for the test.
-	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
-		},
-	},
-	)
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &batchv1alpha1.SchemeGroupVersion,
-		},
-	},
-	)
-	config := &rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &mxv1.SchemeGroupVersion,
-		},
-	}
-	mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
-	ctr, _, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-	ctr.mxJobInformerSynced = testutil.AlwaysReady
-	ctr.PodInformerSynced = testutil.AlwaysReady
-	ctr.ServiceInformerSynced = testutil.AlwaysReady
-	mxJobIndexer := ctr.mxJobInformer.GetIndexer()
-
-	stopCh := make(chan struct{})
-	run := func(ctx context.Context) {
-		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
-			t.Errorf("Failed to run MXNet Controller!")
-		}
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	go run(ctx)
-
-	var key string
-	syncChan := make(chan string)
-	ctr.syncHandler = func(mxJobKey string) (bool, error) {
-		key = mxJobKey
-		<-syncChan
-		return true, nil
-	}
-
-	mxJob := testutil.NewMXJob(1, 0)
-	unstructured, err := testutil.ConvertMXJobToUnstructured(mxJob)
-	if err != nil {
-		t.Errorf("Failed to convert the MXJob to Unstructured: %v", err)
-	}
-
-	if err := mxJobIndexer.Add(unstructured); err != nil {
-		t.Errorf("Failed to add mxjob to mxJobIndexer: %v", err)
-	}
-	pod := testutil.NewPod(mxJob, testutil.LabelWorker, 0, t)
-	ctr.AddPod(pod)
-
-	syncChan <- "sync"
-	if key != testutil.GetKey(mxJob, t) {
-		t.Errorf("Failed to enqueue the MXJob %s: expected %s, got %s", mxJob.Name, testutil.GetKey(mxJob, t), key)
-	}
-	cancel()
-}
 
 func TestRestartPolicy(t *testing.T) {
 	type tc struct {
 		mxJob                 *mxv1.MXJob
 		expectedRestartPolicy v1.RestartPolicy
-		expectedType          mxv1.MXReplicaType
+		expectedType          commonv1.ReplicaType
 	}
 	testCase := []tc{
 		func() tc {
 			mxJob := testutil.NewMXJob(1, 0)
-			specRestartPolicy := mxv1.RestartPolicyExitCode
+			specRestartPolicy := commonv1.RestartPolicyExitCode
 			mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				mxJob:                 mxJob,
@@ -117,7 +43,7 @@ func TestRestartPolicy(t *testing.T) {
 		}(),
 		func() tc {
 			mxJob := testutil.NewMXJob(1, 0)
-			specRestartPolicy := mxv1.RestartPolicyNever
+			specRestartPolicy := commonv1.RestartPolicyNever
 			mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				mxJob:                 mxJob,
@@ -127,7 +53,7 @@ func TestRestartPolicy(t *testing.T) {
 		}(),
 		func() tc {
 			mxJob := testutil.NewMXJob(1, 0)
-			specRestartPolicy := mxv1.RestartPolicyAlways
+			specRestartPolicy := commonv1.RestartPolicyAlways
 			mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				mxJob:                 mxJob,
@@ -137,7 +63,7 @@ func TestRestartPolicy(t *testing.T) {
 		}(),
 		func() tc {
 			mxJob := testutil.NewMXJob(1, 0)
-			specRestartPolicy := mxv1.RestartPolicyOnFailure
+			specRestartPolicy := commonv1.RestartPolicyOnFailure
 			mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].RestartPolicy = specRestartPolicy
 			return tc{
 				mxJob:                 mxJob,
@@ -154,92 +80,4 @@ func TestRestartPolicy(t *testing.T) {
 			t.Errorf("Expected %s, got %s", c.expectedRestartPolicy, podTemplate.Spec.RestartPolicy)
 		}
 	}
-}
-
-func TestExitCode(t *testing.T) {
-	// Prepare the clientset and controller for the test.
-	kubeClientSet := kubeclientset.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &v1.SchemeGroupVersion,
-		},
-	},
-	)
-	// Prepare the kube-batch clientset and controller for the test.
-	kubeBatchClientSet := kubebatchclient.NewForConfigOrDie(&rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &batchv1alpha1.SchemeGroupVersion,
-		},
-	},
-	)
-	config := &rest.Config{
-		Host: "",
-		ContentConfig: rest.ContentConfig{
-			GroupVersion: &mxv1.SchemeGroupVersion,
-		},
-	}
-	mxJobClientSet := mxjobclientset.NewForConfigOrDie(config)
-	ctr, kubeInformerFactory, _ := newMXController(config, kubeClientSet, mxJobClientSet, kubeBatchClientSet, controller.NoResyncPeriodFunc, options.ServerOption{})
-	fakePodControl := &controller.FakePodControl{}
-	ctr.PodControl = fakePodControl
-	ctr.mxJobInformerSynced = testutil.AlwaysReady
-	ctr.PodInformerSynced = testutil.AlwaysReady
-	ctr.ServiceInformerSynced = testutil.AlwaysReady
-	mxJobIndexer := ctr.mxJobInformer.GetIndexer()
-	podIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
-
-	stopCh := make(chan struct{})
-	run := func(ctx context.Context) {
-		if err := ctr.Run(testutil.ThreadCount, stopCh); err != nil {
-			t.Errorf("Failed to run MXNet Controller!")
-		}
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	go run(ctx)
-
-	ctr.updateStatusHandler = func(mxJob *mxv1.MXJob) error {
-		return nil
-	}
-
-	mxJob := testutil.NewMXJob(1, 0)
-	mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeWorker].RestartPolicy = mxv1.RestartPolicyExitCode
-	unstructured, err := testutil.ConvertMXJobToUnstructured(mxJob)
-	if err != nil {
-		t.Errorf("Failed to convert the MXJob to Unstructured: %v", err)
-	}
-
-	if err := mxJobIndexer.Add(unstructured); err != nil {
-		t.Errorf("Failed to add mxjob to mxJobIndexer: %v", err)
-	}
-	pod := testutil.NewPod(mxJob, testutil.LabelWorker, 0, t)
-	pod.Status.Phase = v1.PodFailed
-	pod.Spec.Containers = append(pod.Spec.Containers, v1.Container{})
-	pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, v1.ContainerStatus{
-		Name: mxv1.DefaultContainerName,
-		State: v1.ContainerState{
-			Terminated: &v1.ContainerStateTerminated{
-				ExitCode: 130,
-			},
-		},
-	})
-
-	if err := podIndexer.Add(pod); err != nil {
-		t.Errorf("%s: unexpected error when adding pod %v", mxJob.Name, err)
-	}
-	_, err = ctr.syncMXJob(testutil.GetKey(mxJob, t))
-	if err != nil {
-		t.Errorf("%s: unexpected error when syncing jobs %v", mxJob.Name, err)
-	}
-
-	found := false
-	for _, deletedPodName := range fakePodControl.DeletePodName {
-		if deletedPodName == pod.Name {
-			found = true
-		}
-	}
-	if !found {
-		t.Errorf("Failed to delete pod %s", pod.Name)
-	}
-	cancel()
 }

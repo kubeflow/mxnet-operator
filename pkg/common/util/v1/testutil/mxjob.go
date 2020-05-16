@@ -17,13 +17,13 @@ package testutil
 import (
 	"time"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 )
 
-func NewMXJobWithCleanPolicy(scheduler, worker, server int, policy mxv1.CleanPodPolicy) *mxv1.MXJob {
+func NewMXJobWithCleanPolicy(scheduler, worker, server int, policy commonv1.CleanPodPolicy) *mxv1.MXJob {
 
 	var mxJob *mxv1.MXJob
 
@@ -33,7 +33,7 @@ func NewMXJobWithCleanPolicy(scheduler, worker, server int, policy mxv1.CleanPod
 		mxJob = NewMXJob(worker, server)
 	}
 
-	mxJob.Spec.CleanPodPolicy = &policy
+	mxJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return mxJob
 }
 
@@ -47,47 +47,47 @@ func NewMXJobWithCleanupJobDelay(scheduler, worker, server int, ttl *int32) *mxv
 		mxJob = NewMXJob(worker, server)
 	}
 
-	mxJob.Spec.TTLSecondsAfterFinished = ttl
-	policy := mxv1.CleanPodPolicyNone
-	mxJob.Spec.CleanPodPolicy = &policy
+	mxJob.Spec.RunPolicy.TTLSecondsAfterFinished = ttl
+	policy := commonv1.CleanPodPolicyNone
+	mxJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return mxJob
 }
 
 func NewMXJobWithActiveDeadlineSeconds(scheduler, worker, ps int, ads *int64) *mxv1.MXJob {
 	if scheduler == 1 {
 		mxJob := NewMXJobWithScheduler(worker, ps)
-		mxJob.Spec.ActiveDeadlineSeconds = ads
-		policy := mxv1.CleanPodPolicyAll
-		mxJob.Spec.CleanPodPolicy = &policy
+		mxJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
+		policy := commonv1.CleanPodPolicyAll
+		mxJob.Spec.RunPolicy.CleanPodPolicy = &policy
 		return mxJob
 	}
 	mxJob := NewMXJob(worker, ps)
-	mxJob.Spec.ActiveDeadlineSeconds = ads
-	policy := mxv1.CleanPodPolicyAll
-	mxJob.Spec.CleanPodPolicy = &policy
+	mxJob.Spec.RunPolicy.ActiveDeadlineSeconds = ads
+	policy := commonv1.CleanPodPolicyAll
+	mxJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return mxJob
 }
 
 func NewMXJobWithBackoffLimit(scheduler, worker, ps int, backoffLimit *int32) *mxv1.MXJob {
 	if scheduler == 1 {
 		mxJob := NewMXJobWithScheduler(worker, ps)
-		mxJob.Spec.BackoffLimit = backoffLimit
+		mxJob.Spec.RunPolicy.BackoffLimit = backoffLimit
 		mxJob.Spec.MXReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
-		policy := mxv1.CleanPodPolicyAll
-		mxJob.Spec.CleanPodPolicy = &policy
+		policy := commonv1.CleanPodPolicyAll
+		mxJob.Spec.RunPolicy.CleanPodPolicy = &policy
 		return mxJob
 	}
 	mxJob := NewMXJob(worker, ps)
-	mxJob.Spec.BackoffLimit = backoffLimit
+	mxJob.Spec.RunPolicy.BackoffLimit = backoffLimit
 	mxJob.Spec.MXReplicaSpecs["Worker"].RestartPolicy = "OnFailure"
-	policy := mxv1.CleanPodPolicyAll
-	mxJob.Spec.CleanPodPolicy = &policy
+	policy := commonv1.CleanPodPolicyAll
+	mxJob.Spec.RunPolicy.CleanPodPolicy = &policy
 	return mxJob
 }
 
 func NewMXJobWithScheduler(worker, server int) *mxv1.MXJob {
 	mxJob := NewMXJob(worker, server)
-	mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeScheduler] = &mxv1.MXReplicaSpec{
+	mxJob.Spec.MXReplicaSpecs[mxv1.MXReplicaTypeScheduler] = &commonv1.ReplicaSpec{
 		Template: NewMXReplicaSpecTemplate(),
 	}
 	return mxJob
@@ -103,13 +103,13 @@ func NewMXJob(worker, server int) *mxv1.MXJob {
 			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: mxv1.MXJobSpec{
-			MXReplicaSpecs: make(map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec),
+			MXReplicaSpecs: make(map[commonv1.ReplicaType]*commonv1.ReplicaSpec),
 		},
 	}
 
 	if worker > 0 {
 		worker := int32(worker)
-		workerReplicaSpec := &mxv1.MXReplicaSpec{
+		workerReplicaSpec := &commonv1.ReplicaSpec{
 			Replicas: &worker,
 			Template: NewMXReplicaSpecTemplate(),
 		}
@@ -118,7 +118,7 @@ func NewMXJob(worker, server int) *mxv1.MXJob {
 
 	if server > 0 {
 		server := int32(server)
-		serverReplicaSpec := &mxv1.MXReplicaSpec{
+		serverReplicaSpec := &commonv1.ReplicaSpec{
 			Replicas: &server,
 			Template: NewMXReplicaSpecTemplate(),
 		}

@@ -17,14 +17,19 @@ package mxnet
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
-	"k8s.io/api/core/v1"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonutil "github.com/kubeflow/common/pkg/util"
+	mxlogger "github.com/kubeflow/common/pkg/util"
+	log "github.com/sirupsen/logrus"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (
@@ -40,223 +45,106 @@ const (
 	mxJobRestartingReason = "MXJobRestarting"
 )
 
-// updateStatus updates the status of the mxjob.
-func (tc *MXController) updateStatusSingle(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType, replicas int, restart, schedulerCompleted bool) error {
+func (tc *MXController) UpdateJobStatus(job interface{}, replicas map[commonv1.ReplicaType]*commonv1.ReplicaSpec, jobStatus *commonv1.JobStatus) error {
+	mxjob, ok := job.(*mxv1.MXJob)
+	if !ok {
+		return fmt.Errorf("%v is not a type of MXJob", mxjob)
+	}
+
 	mxjobKey, err := KeyFunc(mxjob)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("couldn't get key for mxjob object %#v: %v", mxjob, err))
 		return err
 	}
 
-	// Expect to have `replicas - succeeded` pods alive.
-	expected := replicas - int(mxjob.Status.MXReplicaStatuses[rtype].Succeeded)
-	running := int(mxjob.Status.MXReplicaStatuses[rtype].Active)
-	failed := int(mxjob.Status.MXReplicaStatuses[rtype].Failed)
+	for rtype, spec := range replicas {
+		status := jobStatus.ReplicaStatuses[rtype]
 
-	mxlogger.LoggerForJob(mxjob).Infof("MXJob=%s, ReplicaType=%s expected=%d, running=%d, failed=%d",
-		mxjob.Name, rtype, expected, running, failed)
-	// set StartTime.
-	if mxjob.Status.StartTime == nil {
-		now := metav1.Now()
-		mxjob.Status.StartTime = &now
-		// enqueue a sync to check if job past ActiveDeadlineSeconds
-		if mxjob.Spec.ActiveDeadlineSeconds != nil {
-			mxlogger.LoggerForJob(mxjob).Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.ActiveDeadlineSeconds)
-			tc.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.ActiveDeadlineSeconds)*time.Second)
-		}
-	}
+		// Expect to have `replicas - succeeded` pods alive.
+		succeeded := status.Succeeded
+		expected := *(spec.Replicas) - succeeded
+		running := status.Active
+		failed := status.Failed
 
-	if ContainSchedulerSpec(mxjob) {
-		if rtype == mxv1.MXReplicaTypeScheduler {
-			if running > 0 {
-				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-				err := updateMXJobConditions(mxjob, mxv1.MXJobRunning, mxJobRunningReason, msg)
-				if err != nil {
-					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
-					return err
-				}
-			}
-			if expected == 0 {
-				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
-				if mxjob.Status.CompletionTime == nil {
-					now := metav1.Now()
-					mxjob.Status.CompletionTime = &now
-				}
-				err := updateMXJobConditions(mxjob, mxv1.MXJobSucceeded, mxJobSucceededReason, msg)
-				if err != nil {
-					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
-					return err
-				}
+		log.Infof("MXJob=%s, ReplicaType=%s expected=%d, running=%d, succeeded=%d , failed=%d",
+			mxjob.Name, rtype, expected, running, succeeded, failed)
+
+		if mxjob.Status.StartTime == nil {
+			now := metav1.Now()
+			mxjob.Status.StartTime = &now
+			// enqueue a sync to check if job past ActiveDeadlineSeconds
+			if mxjob.Spec.RunPolicy.ActiveDeadlineSeconds != nil {
+				mxlogger.LoggerForJob(mxjob).Infof("Job with ActiveDeadlineSeconds will sync after %d seconds", *mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)
+				tc.WorkQueue.AddAfter(mxjobKey, time.Duration(*mxjob.Spec.RunPolicy.ActiveDeadlineSeconds)*time.Second)
 			}
 		}
-	} else {
-		if rtype == mxv1.MXReplicaTypeWorker || rtype == mxv1.MXReplicaTypeTuner {
-			// All workers are succeeded or scheduler completed, leave a succeeded condition.
-			if expected == 0 || schedulerCompleted {
-				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
-				if mxjob.Status.CompletionTime == nil {
-					now := metav1.Now()
-					mxjob.Status.CompletionTime = &now
-				}
-				err := updateMXJobConditions(mxjob, mxv1.MXJobSucceeded, mxJobSucceededReason, msg)
-				if err != nil {
-					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
-					return err
-				}
-			} else if running > 0 {
-				// Some workers are still running, leave a running condition.
-				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
-				err := updateMXJobConditions(mxjob, mxv1.MXJobRunning, mxJobRunningReason, msg)
-				if err != nil {
-					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
-					return err
-				}
-			}
-		}
-	}
 
-	if failed > 0 {
-		if restart {
-			msg := fmt.Sprintf("MXJob %s is restarting.", mxjob.Name)
-			err := updateMXJobConditions(mxjob, mxv1.MXJobRestarting, mxJobRestartingReason, msg)
+		if running > 0 {
+			msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
+			err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRunning, mxJobRunningReason, msg)
 			if err != nil {
 				mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
 				return err
 			}
-		} else {
-			msg := fmt.Sprintf("MXJob %s is failed.", mxjob.Name)
+		}
+		if expected == 0 {
+			msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
+			tc.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobSucceededReason, msg)
 			if mxjob.Status.CompletionTime == nil {
 				now := metav1.Now()
 				mxjob.Status.CompletionTime = &now
 			}
-			err := updateMXJobConditions(mxjob, mxv1.MXJobFailed, mxJobFailedReason, msg)
+			err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobSucceeded, mxJobSucceededReason, msg)
 			if err != nil {
 				mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
 				return err
 			}
 		}
+
+		if failed > 0 {
+			if spec.RestartPolicy == commonv1.RestartPolicyExitCode {
+				msg := fmt.Sprintf("mxjob %s is restarting because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
+				tc.Recorder.Event(mxjob, corev1.EventTypeWarning, mxJobRestartingReason, msg)
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobRestarting, mxJobRestartingReason, msg)
+				if err != nil {
+					mxlogger.LoggerForJob(mxjob).Infof("Append job condition error: %v", err)
+					return err
+				}
+			} else {
+				msg := fmt.Sprintf("mxjob %s is failed because %d %s replica(s) failed.", mxjob.Name, failed, rtype)
+				tc.Recorder.Event(mxjob, corev1.EventTypeNormal, mxJobFailedReason, msg)
+				if mxjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					mxjob.Status.CompletionTime = &now
+				}
+				err := commonutil.UpdateJobConditions(jobStatus, commonv1.JobFailed, mxJobFailedReason, msg)
+				if err != nil {
+					mxlogger.LoggerForJob(mxjob).Infof("Append job condition error: %v", err)
+					return err
+				}
+			}
+		}
 	}
+
 	return nil
 }
 
-// updateMXJobStatus updates the status of the given MXJob.
-func (tc *MXController) updateMXJobStatus(mxjob *mxv1.MXJob) error {
-	_, err := tc.mxJobClientSet.KubeflowV1().MXJobs(mxjob.Namespace).UpdateStatus(mxjob)
-	return err
-}
+// UpdateJobStatusInApiServer updates the status of the given MXJob.
+func (tc *MXController) UpdateJobStatusInApiServer(job interface{}, jobStatus *commonv1.JobStatus) error {
+	mxJob, ok := job.(*mxv1.MXJob)
+	if !ok {
+		return fmt.Errorf("%v is not a type of MXJob", mxJob)
+	}
 
-// updateMXJobConditions updates the conditions of the given mxjob.
-func updateMXJobConditions(mxjob *mxv1.MXJob, conditionType mxv1.MXJobConditionType, reason, message string) error {
-	condition := newCondition(conditionType, reason, message)
-	setCondition(&mxjob.Status, condition)
+	if !reflect.DeepEqual(&mxJob.Status, jobStatus) {
+		mxJob = mxJob.DeepCopy()
+		mxJob.Status = *jobStatus.DeepCopy()
+	}
+
+	if _, err := tc.mxJobClientSet.KubeflowV1().MXJobs(mxJob.Namespace).UpdateStatus(mxJob); err != nil {
+		mxlogger.LoggerForJob(mxJob).Error(err, " failed to update MxJob conditions in the API server")
+		return err
+	}
+
 	return nil
-}
-
-// initializeMXReplicaStatuses initializes the MXReplicaStatuses for replica.
-func initializeMXReplicaStatuses(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType) {
-	if mxjob.Status.MXReplicaStatuses == nil {
-		mxjob.Status.MXReplicaStatuses = make(map[mxv1.MXReplicaType]*mxv1.MXReplicaStatus)
-	}
-
-	mxjob.Status.MXReplicaStatuses[rtype] = &mxv1.MXReplicaStatus{}
-}
-
-// updateMXJobReplicaStatuses updates the MXJobReplicaStatuses according to the pod.
-func updateMXJobReplicaStatuses(mxjob *mxv1.MXJob, rtype mxv1.MXReplicaType, pod *v1.Pod) {
-	switch pod.Status.Phase {
-	case v1.PodRunning:
-		mxjob.Status.MXReplicaStatuses[rtype].Active++
-	case v1.PodSucceeded:
-		mxjob.Status.MXReplicaStatuses[rtype].Succeeded++
-	case v1.PodFailed:
-		mxjob.Status.MXReplicaStatuses[rtype].Failed++
-	}
-}
-
-// newCondition creates a new mxjob condition.
-func newCondition(conditionType mxv1.MXJobConditionType, reason, message string) mxv1.MXJobCondition {
-	return mxv1.MXJobCondition{
-		Type:               conditionType,
-		Status:             v1.ConditionTrue,
-		LastUpdateTime:     metav1.Now(),
-		LastTransitionTime: metav1.Now(),
-		Reason:             reason,
-		Message:            message,
-	}
-}
-
-// getCondition returns the condition with the provided type.
-func getCondition(status mxv1.MXJobStatus, condType mxv1.MXJobConditionType) *mxv1.MXJobCondition {
-	if len(status.Conditions) > 0 {
-		return &status.Conditions[len(status.Conditions)-1]
-	}
-	return nil
-}
-
-func hasCondition(status mxv1.MXJobStatus, condType mxv1.MXJobConditionType) bool {
-	for _, condition := range status.Conditions {
-		if condition.Type == condType && condition.Status == v1.ConditionTrue {
-			return true
-		}
-	}
-	return false
-}
-
-func isSucceeded(status mxv1.MXJobStatus) bool {
-	return hasCondition(status, mxv1.MXJobSucceeded)
-}
-
-func isFailed(status mxv1.MXJobStatus) bool {
-	return hasCondition(status, mxv1.MXJobFailed)
-}
-
-// setCondition updates the mxjob to include the provided condition.
-// If the condition that we are about to add already exists
-// and has the same status and reason then we are not going to update.
-func setCondition(status *mxv1.MXJobStatus, condition mxv1.MXJobCondition) {
-	// Do nothing if MXJobStatus is completed
-	if isFailed(*status) || isSucceeded(*status) {
-		return
-	}
-
-	currentCond := getCondition(*status, condition.Type)
-
-	// Do nothing if condition doesn't change
-	if currentCond != nil && currentCond.Status == condition.Status && currentCond.Reason == condition.Reason {
-		return
-	}
-
-	// Do not update lastTransitionTime if the status of the condition doesn't change.
-	if currentCond != nil && currentCond.Status == condition.Status {
-		condition.LastTransitionTime = currentCond.LastTransitionTime
-	}
-
-	// Append the updated condition to the
-	newConditions := filterOutCondition(status.Conditions, condition.Type)
-	status.Conditions = append(newConditions, condition)
-}
-
-// filterOutCondition returns a new slice of mxjob conditions without conditions with the provided type.
-func filterOutCondition(conditions []mxv1.MXJobCondition, condType mxv1.MXJobConditionType) []mxv1.MXJobCondition {
-	var newConditions []mxv1.MXJobCondition
-	for _, c := range conditions {
-		if condType == mxv1.MXJobRestarting && c.Type == mxv1.MXJobRunning {
-			continue
-		}
-		if condType == mxv1.MXJobRunning && c.Type == mxv1.MXJobRestarting {
-			continue
-		}
-
-		if c.Type == condType {
-			continue
-		}
-
-		// Set the running condition status to be false when current condition failed or succeeded
-		if (condType == mxv1.MXJobFailed || condType == mxv1.MXJobSucceeded) && c.Type == mxv1.MXJobRunning {
-			c.Status = v1.ConditionFalse
-		}
-
-		newConditions = append(newConditions, c)
-	}
-	return newConditions
 }
