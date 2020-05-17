@@ -1,3 +1,7 @@
+# Binaries
 mxnet-operator.v1beta1
+mxnet-operator.v1
 
+# IDEs
 .idea/
+.vscode/
