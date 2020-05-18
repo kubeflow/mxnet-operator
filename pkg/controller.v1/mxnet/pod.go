@@ -30,9 +30,6 @@ import (
 )
 
 const (
-	// gang scheduler name.
-	gangSchedulerName = "volcano"
-
 	// mxConfig is the environment variable name of MXNet cluster spec.
 	mxConfig = "MX_CONFIG"
 )
@@ -160,13 +157,4 @@ func getConfigAddr(mxConfigData *MXConfig, rtype commonv1.ReplicaType, index int
 func getConfigReplica(mxConfigData *MXConfig, rtype commonv1.ReplicaType) int {
 	rt := strings.ToLower(string(rtype))
 	return len(mxConfigData.Cluster[rt])
-}
-
-func isNonGangSchedulerSet(job *mxv1.MXJob) bool {
-	for _, spec := range job.Spec.MXReplicaSpecs {
-		if spec.Template.Spec.SchedulerName != "" && spec.Template.Spec.SchedulerName != gangSchedulerName {
-			return true
-		}
-	}
-	return false
 }

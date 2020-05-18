@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"github.com/kubeflow/common/pkg/controller.v1/control"
 	batchv1beta1 "volcano.sh/volcano/pkg/apis/scheduling/v1beta1"
 	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
@@ -36,11 +35,6 @@ import (
 	mxjobclientset "github.com/kubeflow/mxnet-operator/pkg/client/clientset/versioned"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1/testutil"
-)
-
-var (
-	mxJobRunning   = commonv1.JobRunning
-	mxJobSucceeded = commonv1.JobSucceeded
 )
 
 func newMXController(
