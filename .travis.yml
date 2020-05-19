@@ -25,5 +25,3 @@ script:
   # to match ignore files and it does not support it.
   - goveralls -service=travis-ci -v -package ./pkg/... -ignore "pkg/client/*/*.go,pkg/client/*/*/*.go,pkg/client/*/*/*/*.go,pkg/client/*/*/*/*/*.go,pkg/client/*/*/*/*/*/*.go,pkg/client/*/*/*/*/*/*/*.go,pkg/apis/mxnet/*/zz_generated.*.go"
 
-notifications:
-  on_success: never
