@@ -26,5 +26,4 @@ script:
   - goveralls -service=travis-ci -v -package ./pkg/... -ignore "pkg/client/*/*.go,pkg/client/*/*/*.go,pkg/client/*/*/*/*.go,pkg/client/*/*/*/*/*.go,pkg/client/*/*/*/*/*/*.go,pkg/client/*/*/*/*/*/*/*.go,pkg/apis/mxnet/*/zz_generated.*.go"
 
 notifications:
-  webhooks: https://www.travisbuddy.com/
   on_success: never
