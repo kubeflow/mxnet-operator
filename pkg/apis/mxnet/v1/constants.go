@@ -14,6 +14,8 @@
 
 package v1
 
+import commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+
 const (
 	// EnvKubeflowNamespace is ENV for kubeflow namespace specified by user.
 	EnvKubeflowNamespace = "KUBEFLOW_NAMESPACE"
@@ -26,5 +28,5 @@ const (
 	// DefaultPort is default value of the port.
 	DefaultPort = 9091
 	// DefaultRestartPolicy is default RestartPolicy for MXReplicaSpec.
-	DefaultRestartPolicy = RestartPolicyNever
+	DefaultRestartPolicy = commonv1.RestartPolicyNever
 )

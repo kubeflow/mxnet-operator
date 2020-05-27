@@ -4,22 +4,45 @@ import (
 	"fmt"
 	"time"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	commonutil "github.com/kubeflow/common/pkg/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	mxlogger "github.com/kubeflow/common/pkg/util"
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	"github.com/kubeflow/mxnet-operator/pkg/util/k8sutil"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	failedMarshalMXJobReason = "FailedInvalidMXJobSpec"
-	inspectFailMXJobReason   = "InspectFailedInvalidMXReplicaSpec"
+	failedMarshalMXJobReason  = "FailedInvalidMXJobSpec"
+	inspectFailMXJobReason    = "InspectFailedInvalidMXReplicaSpec"
+	FailedDeleteJobReason     = "FailedDeleteJob"
+	SuccessfulDeleteJobReason = "SuccessfulDeleteJob"
 )
+
+func (tc *MXController) DeleteJob(job interface{}) error {
+	mxJob, ok := job.(*mxv1.MXJob)
+	if !ok {
+		return fmt.Errorf("%v is not a type of MXJob", mxJob)
+	}
+
+	log := mxlogger.LoggerForJob(mxJob)
+	if err := tc.mxJobClientSet.KubeflowV1().MXJobs(mxJob.Namespace).Delete(mxJob.Name, &metav1.DeleteOptions{}); err != nil {
+		tc.JobController.Recorder.Eventf(mxJob, v1.EventTypeWarning, FailedDeleteJobReason, "Error deleting: %v", err)
+		log.Errorf("failed to delete job %s/%s, %v", mxJob.Namespace, mxJob.Name, err)
+		return err
+	}
+
+	tc.JobController.Recorder.Eventf(mxJob, v1.EventTypeNormal, SuccessfulDeleteJobReason, "Deleted job: %v", mxJob.Name)
+	log.Infof("job %s/%s has been deleted", mxJob.Namespace, mxJob.Name)
+	return nil
+}
 
 // When a pod is added, set the defaults and enqueue the current mxjob.
 func (tc *MXController) addMXJob(obj interface{}) {
@@ -39,10 +62,10 @@ func (tc *MXController) addMXJob(obj interface{}) {
 			// TODO(jlewi): v1 doesn't appear to define an error type.
 			tc.Recorder.Event(un, v1.EventTypeWarning, failedMarshalMXJobReason, errMsg)
 
-			status := mxv1.MXJobStatus{
-				Conditions: []mxv1.MXJobCondition{
+			status := commonv1.JobStatus{
+				Conditions: []commonv1.JobCondition{
 					{
-						Type:               mxv1.MXJobFailed,
+						Type:               commonv1.JobFailed,
 						Status:             v1.ConditionTrue,
 						LastUpdateTime:     metav1.Now(),
 						LastTransitionTime: metav1.Now(),
@@ -81,7 +104,7 @@ func (tc *MXController) addMXJob(obj interface{}) {
 	logger.Info(msg)
 
 	// Add a created condition.
-	err = updateMXJobConditions(mxJob, mxv1.MXJobCreated, mxJobCreatedReason, msg)
+	err = commonutil.UpdateJobConditions(&mxJob.Status, commonv1.JobCreated, mxJobCreatedReason, msg)
 	if err != nil {
 		logger.Errorf("Append mxJob condition error: %v", err)
 		return
@@ -118,11 +141,11 @@ func (tc *MXController) updateMXJob(old, cur interface{}) {
 
 	// check if need to add a new rsync for ActiveDeadlineSeconds
 	if curMXJob.Status.StartTime != nil {
-		curMXJobADS := curMXJob.Spec.ActiveDeadlineSeconds
+		curMXJobADS := curMXJob.Spec.RunPolicy.ActiveDeadlineSeconds
 		if curMXJobADS == nil {
 			return
 		}
-		oldMXJobADS := oldMXJob.Spec.ActiveDeadlineSeconds
+		oldMXJobADS := oldMXJob.Spec.RunPolicy.ActiveDeadlineSeconds
 		if oldMXJobADS == nil || *oldMXJobADS != *curMXJobADS {
 			now := metav1.Now()
 			start := curMXJob.Status.StartTime.Time
@@ -135,74 +158,7 @@ func (tc *MXController) updateMXJob(old, cur interface{}) {
 	}
 }
 
-func (tc *MXController) deletePodsAndServices(mxJob *mxv1.MXJob, pods []*v1.Pod) error {
-	if len(pods) == 0 {
-		return nil
-	}
-
-	// Delete nothing when the cleanPodPolicy is None.
-	if *mxJob.Spec.CleanPodPolicy == mxv1.CleanPodPolicyNone {
-		return nil
-	}
-
-	for _, pod := range pods {
-		if *mxJob.Spec.CleanPodPolicy == mxv1.CleanPodPolicyRunning && pod.Status.Phase != v1.PodRunning {
-			continue
-		}
-
-		if err := tc.PodControl.DeletePod(pod.Namespace, pod.Name, mxJob); err != nil {
-			return err
-		}
-		// Pod and service have the same name, thus the service could be deleted using pod's name.
-		if err := tc.ServiceControl.DeleteService(pod.Namespace, pod.Name, mxJob); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (tc *MXController) cleanupMXJob(mxJob *mxv1.MXJob) error {
-	currentTime := time.Now()
-	ttl := mxJob.Spec.TTLSecondsAfterFinished
-	if ttl == nil {
-		// do nothing if the cleanup delay is not set
-		return nil
-	}
-	duration := time.Second * time.Duration(*ttl)
-	if currentTime.After(mxJob.Status.CompletionTime.Add(duration)) {
-		err := tc.deleteMXJobHandler(mxJob)
-		if err != nil {
-			mxlogger.LoggerForJob(mxJob).Warnf("Cleanup MXJob error: %v.", err)
-			return err
-		}
-		return nil
-	}
-	key, err := KeyFunc(mxJob)
-	if err != nil {
-		mxlogger.LoggerForJob(mxJob).Warnf("Couldn't get key for mxjob object: %v", err)
-		return err
-	}
-	tc.WorkQueue.AddRateLimited(key)
-	return nil
-}
-
 // deleteMXJob deletes the given MXJob.
 func (tc *MXController) deleteMXJob(mxJob *mxv1.MXJob) error {
 	return tc.mxJobClientSet.KubeflowV1().MXJobs(mxJob.Namespace).Delete(mxJob.Name, &metav1.DeleteOptions{})
-}
-
-func getTotalReplicas(mxjob *mxv1.MXJob) int32 {
-	mxjobReplicas := int32(0)
-	for _, r := range mxjob.Spec.MXReplicaSpecs {
-		mxjobReplicas += *r.Replicas
-	}
-	return mxjobReplicas
-}
-
-func getTotalFailedReplicas(mxjob *mxv1.MXJob) int32 {
-	totalFailedReplicas := int32(0)
-	for rtype := range mxjob.Status.MXReplicaStatuses {
-		totalFailedReplicas += mxjob.Status.MXReplicaStatuses[rtype].Failed
-	}
-	return totalFailedReplicas
 }

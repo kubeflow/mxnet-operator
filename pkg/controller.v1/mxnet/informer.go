@@ -12,12 +12,12 @@ import (
 	restclientset "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
+	mxlogger "github.com/kubeflow/common/pkg/util"
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 	"github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/validation"
 	mxjobinformers "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions"
 	mxjobinformersv1 "github.com/kubeflow/mxnet-operator/pkg/client/informers/externalversions/mxnet/v1"
 	"github.com/kubeflow/mxnet-operator/pkg/common/util/v1/unstructured"
-	mxlogger "github.com/kubeflow/tf-operator/pkg/logger"
 )
 
 const (

@@ -17,6 +17,8 @@ package mxnet
 import (
 	"fmt"
 
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
 )
 
@@ -25,7 +27,7 @@ var (
 )
 
 // GetPortFromMXJob gets the port of mxnet container.
-func GetPortFromMXJob(mxJob *mxv1.MXJob, rtype mxv1.MXReplicaType) (int32, error) {
+func GetPortFromMXJob(mxJob *mxv1.MXJob, rtype commonv1.ReplicaType) (int32, error) {
 	containers := mxJob.Spec.MXReplicaSpecs[rtype].Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == mxv1.DefaultContainerName {

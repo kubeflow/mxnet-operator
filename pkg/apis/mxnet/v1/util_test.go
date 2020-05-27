@@ -14,11 +14,14 @@
 
 package v1
 
-import "testing"
+import (
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
+	"testing"
+)
 
 func TestIsScheduler(t *testing.T) {
 	tc := []struct {
-		Type     MXReplicaType
+		Type     commonv1.ReplicaType
 		Expected bool
 	}{
 		{

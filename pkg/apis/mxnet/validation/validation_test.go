@@ -15,6 +15,7 @@
 package validation
 
 import (
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 	"testing"
 
 	mxv1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1"
@@ -96,8 +97,8 @@ func TestValidateV1MXJobSpec(t *testing.T) {
 			MXReplicaSpecs: nil,
 		},
 		{
-			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
-				mxv1.MXReplicaTypeWorker: &mxv1.MXReplicaSpec{
+			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				mxv1.MXReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{},
@@ -107,8 +108,8 @@ func TestValidateV1MXJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
-				mxv1.MXReplicaTypeWorker: &mxv1.MXReplicaSpec{
+			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				mxv1.MXReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -122,8 +123,8 @@ func TestValidateV1MXJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
-				mxv1.MXReplicaTypeWorker: &mxv1.MXReplicaSpec{
+			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				mxv1.MXReplicaTypeWorker: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -138,8 +139,8 @@ func TestValidateV1MXJobSpec(t *testing.T) {
 			},
 		},
 		{
-			MXReplicaSpecs: map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec{
-				mxv1.MXReplicaTypeScheduler: &mxv1.MXReplicaSpec{
+			MXReplicaSpecs: map[commonv1.ReplicaType]*commonv1.ReplicaSpec{
+				mxv1.MXReplicaTypeScheduler: &commonv1.ReplicaSpec{
 					Template: v1.PodTemplateSpec{
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{},

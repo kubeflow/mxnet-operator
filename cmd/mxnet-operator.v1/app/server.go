@@ -42,7 +42,7 @@ import (
 	controller "github.com/kubeflow/mxnet-operator/pkg/controller.v1/mxnet"
 	"github.com/kubeflow/mxnet-operator/pkg/version"
 	"github.com/kubeflow/tf-operator/pkg/util/signals"
-	kubebatchclient "github.com/kubernetes-sigs/kube-batch/pkg/client/clientset/versioned"
+	volcanoclient "volcano.sh/volcano/pkg/client/clientset/versioned"
 )
 
 const (
@@ -98,7 +98,7 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Create clients.
-	kubeClientSet, leaderElectionClientSet, mxJobClientSet, kubeBatchClientSet, err := createClientSets(kcfg)
+	kubeClientSet, leaderElectionClientSet, mxJobClientSet, volcanoClientSet, err := createClientSets(kcfg)
 	if err != nil {
 		return err
 	}
@@ -109,13 +109,12 @@ func Run(opt *options.ServerOption) error {
 	}
 
 	// Create informer factory.
-	kubeInformerFactory := kubeinformers.NewFilteredSharedInformerFactory(kubeClientSet, opt.ResyncPeriod, opt.Namespace, nil)
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientSet, opt.ResyncPeriod, kubeinformers.WithNamespace(opt.Namespace))
 	mxJobInformerFactory := mxjobinformers.NewSharedInformerFactory(mxJobClientSet, opt.ResyncPeriod)
-
 	unstructuredInformer := controller.NewUnstructuredMXJobInformer(kcfg, opt.Namespace)
 
 	// Create mx controller.
-	tc := controller.NewMXController(unstructuredInformer, kubeClientSet, mxJobClientSet, kubeBatchClientSet, kubeInformerFactory, mxJobInformerFactory, *opt)
+	tc := controller.NewMXController(unstructuredInformer, kubeClientSet, mxJobClientSet, volcanoClientSet, kubeInformerFactory, mxJobInformerFactory, *opt)
 
 	// Start informer goroutines.
 	go kubeInformerFactory.Start(stopCh)
@@ -179,7 +178,7 @@ func Run(opt *options.ServerOption) error {
 	return nil
 }
 
-func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, mxjobclientset.Interface, kubebatchclient.Interface, error) {
+func createClientSets(config *restclientset.Config) (kubeclientset.Interface, kubeclientset.Interface, mxjobclientset.Interface, volcanoclient.Interface, error) {
 	kubeClientSet, err := kubeclientset.NewForConfig(restclientset.AddUserAgent(config, "mxnet-operator"))
 	if err != nil {
 		return nil, nil, nil, nil, err
@@ -195,12 +194,12 @@ func createClientSets(config *restclientset.Config) (kubeclientset.Interface, ku
 		return nil, nil, nil, nil, err
 	}
 
-	kubeBatchClientSet, err := kubebatchclient.NewForConfig(restclientset.AddUserAgent(config, "kube-batch"))
+	volcanoClientSet, err := volcanoclient.NewForConfig(restclientset.AddUserAgent(config, "volcano"))
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
-	return kubeClientSet, leaderElectionClientSet, mxJobClientSet, kubeBatchClientSet, nil
+	return kubeClientSet, leaderElectionClientSet, mxJobClientSet, volcanoClientSet, nil
 }
 
 func checkCRDExists(clientset mxjobclientset.Interface, namespace string) bool {

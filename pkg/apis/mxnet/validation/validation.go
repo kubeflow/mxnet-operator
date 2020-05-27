@@ -16,6 +16,7 @@ package validation
 
 import (
 	"fmt"
+	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
 
 	log "github.com/sirupsen/logrus"
 
@@ -63,12 +64,12 @@ func validateBetaOneReplicaSpecs(specs map[mxv1beta1.MXReplicaType]*mxv1beta1.MX
 	return nil
 }
 
-// ValidateBetaOneMXJobSpec checks that the v1beta1.MXJobSpec is valid.
+// ValidateV1MXJobSpec checks that the v1.MXJobSpec is valid.
 func ValidateV1MXJobSpec(c *mxv1.MXJobSpec) error {
 	return validateV1ReplicaSpecs(c.MXReplicaSpecs)
 }
 
-func validateV1ReplicaSpecs(specs map[mxv1.MXReplicaType]*mxv1.MXReplicaSpec) error {
+func validateV1ReplicaSpecs(specs map[commonv1.ReplicaType]*commonv1.ReplicaSpec) error {
 	if specs == nil {
 		return fmt.Errorf("MXJobSpec is not valid")
 	}
