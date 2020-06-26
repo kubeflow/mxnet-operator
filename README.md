@@ -18,7 +18,7 @@ and manage Apache MXNet jobs just like built-in K8S resources.
 ### Deploy MXJob CRD and Apache MXNet Operator
 
 ```
-kubectl create -k manifests
+kubectl create -k manifests/overlays/v1beta1/
 ```
 
 ### Verify that MXJob CRD and Apache MXNet Operator are installed
