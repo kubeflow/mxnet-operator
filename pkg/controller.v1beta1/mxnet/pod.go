@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
@@ -248,6 +248,14 @@ func setClusterSpec(podTemplateSpec *v1.PodTemplateSpec, mxjob *mxv1beta1.MXJob,
 			Name:  "DMLC_USE_KUBERNETES",
 			Value: strconv.Itoa(1),
 		})
+
+		// BytePS needs env DMLC_WORKER_ID for each worker
+		if rt == strings.ToLower(string(mxv1beta1.MXReplicaTypeWorker)) {
+			c.Env = append(c.Env, v1.EnvVar{
+				Name:  "DMLC_WORKER_ID",
+				Value: index,
+			})
+		}
 	}
 	return nil
 }
