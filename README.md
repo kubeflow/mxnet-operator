@@ -3,7 +3,8 @@
 ## Overview
 
 MXNet Operator provides a Kubernetes custom resource `MXJob` that makes it easy to
-run distributed or non-distributed [Apache MXNet](https://github.com/apache/incubator-mxnet) jobs (training and tuning) on Kubernetes. 
+run distributed or non-distributed [Apache MXNet](https://github.com/apache/incubator-mxnet) jobs (training and tuning) 
+and other extended framework like [BytePS](https://github.com/bytedance/byteps) jobs on Kubernetes. 
 Using a Custom Resource Definition (CRD) gives users the ability to create 
 and manage Apache MXNet jobs just like built-in K8S resources. 
 
