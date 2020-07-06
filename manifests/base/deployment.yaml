@@ -17,7 +17,7 @@ spec:
       serviceAccountName: mxnet-operator
       containers:
       - name: mxnet-operator
-        image: mxjob/mxnet-operator:v1beta1
+        image: jasonliu747/mxnet-operator:v1beta1
         imagePullPolicy: Always
         env:
         - name: MY_POD_NAMESPACE

@@ -7,5 +7,5 @@ resources:
   - crd-v1beta1.yaml
 
 images:
-- name: mxjob/mxnet-operator
+- name: jasonliu747/mxnet-operator
   newTag: v1beta1
