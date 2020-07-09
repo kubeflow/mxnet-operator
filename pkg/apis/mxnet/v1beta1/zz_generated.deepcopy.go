@@ -109,6 +109,11 @@ func (in *MXJobSpec) DeepCopyInto(out *MXJobSpec) {
 		*out = new(CleanPodPolicy)
 		**out = **in
 	}
+	if in.SuccessPolicy != nil {
+		in, out := &in.SuccessPolicy, &out.SuccessPolicy
+		*out = new(SuccessPolicy)
+		**out = **in
+	}
 	if in.TTLSecondsAfterFinished != nil {
 		in, out := &in.TTLSecondsAfterFinished, &out.TTLSecondsAfterFinished
 		*out = new(int32)

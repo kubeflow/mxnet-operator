@@ -17,7 +17,7 @@ package v1beta1
 import (
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -91,6 +91,12 @@ func SetDefaults_MXJob(mxjob *MXJob) {
 	if mxjob.Spec.CleanPodPolicy == nil {
 		all := CleanPodPolicyAll
 		mxjob.Spec.CleanPodPolicy = &all
+	}
+
+	// Set default success policy to "".
+	if mxjob.Spec.SuccessPolicy == nil {
+		defaultPolicy := SuccessPolicyDefault
+		mxjob.Spec.SuccessPolicy = &defaultPolicy
 	}
 
 	// Update the key of MXReplicaSpecs to camel case.

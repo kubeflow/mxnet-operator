@@ -4,6 +4,8 @@ metadata:
   name: "byteps-mxnet-job"
 spec:
   jobMode: MXTrain
+  cleanPodPolicy: Running
+  successPolicy: AllWorkers
   mxReplicaSpecs:
     Scheduler:
       replicas: 1
