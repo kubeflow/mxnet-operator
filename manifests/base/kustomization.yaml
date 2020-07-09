@@ -8,5 +8,5 @@ resources:
 - deployment.yaml
 
 images:
-- name: jasonliu747/mxnet-operator
+- name: mxjob/mxnet-operator
   newTag: v1beta1
