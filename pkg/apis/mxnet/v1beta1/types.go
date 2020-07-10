@@ -49,7 +49,8 @@ type MXJobSpec struct {
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
 
 	// SuccessPolicy defines the policy to mark the MXJob as succeeded.
-	// Default to "", using the default rules.
+	// Default to "", using the default rules. When either scheduler
+	// or all workers have completed, consider the job is finished.
 	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
 
 	// TTLSecondsAfterFinished is the TTL to clean up mxnet-jobs (temporary
