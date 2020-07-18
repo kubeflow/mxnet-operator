@@ -17,7 +17,7 @@ package testutil
 import (
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
@@ -50,6 +50,20 @@ func NewMXJobWithCleanupJobDelay(scheduler, worker, server int, ttl *int32) *mxv
 	mxJob.Spec.TTLSecondsAfterFinished = ttl
 	policy := mxv1beta1.CleanPodPolicyNone
 	mxJob.Spec.CleanPodPolicy = &policy
+	return mxJob
+}
+
+func NewMXJobWithSuccessPolicy(scheduler, worker, server int, policy mxv1beta1.SuccessPolicy) *mxv1beta1.MXJob {
+
+	var mxJob *mxv1beta1.MXJob
+
+	if scheduler > 0 {
+		mxJob = NewMXJobWithScheduler(worker, server)
+	} else {
+		mxJob = NewMXJob(worker, server)
+	}
+
+	mxJob.Spec.SuccessPolicy = &policy
 	return mxJob
 }
 

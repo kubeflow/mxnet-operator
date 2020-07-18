@@ -18,7 +18,7 @@ package mxnet
 import (
 	"fmt"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mxv1beta1 "github.com/kubeflow/mxnet-operator/pkg/apis/mxnet/v1beta1"
@@ -64,6 +64,19 @@ func updateStatusSingle(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, r
 				}
 			}
 			if expected == 0 {
+				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
+				if mxjob.Status.CompletionTime == nil {
+					now := metav1.Now()
+					mxjob.Status.CompletionTime = &now
+				}
+				err := updateMXJobConditions(mxjob, mxv1beta1.MXJobSucceeded, mxJobSucceededReason, msg)
+				if err != nil {
+					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
+					return err
+				}
+			}
+		} else if rtype == mxv1beta1.MXReplicaTypeWorker {
+			if expected == 0 && *mxjob.Spec.SuccessPolicy == mxv1beta1.SuccessPolicyAllWorkers {
 				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
 				if mxjob.Status.CompletionTime == nil {
 					now := metav1.Now()

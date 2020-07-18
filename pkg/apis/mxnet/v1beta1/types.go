@@ -15,7 +15,7 @@
 package v1beta1
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,8 +45,13 @@ type MXJob struct {
 type MXJobSpec struct {
 	// CleanPodPolicy defines the policy to kill pods after MXJob is
 	// succeeded.
-	// Default to Running.
+	// Default to All.
 	CleanPodPolicy *CleanPodPolicy `json:"cleanPodPolicy,omitempty"`
+
+	// SuccessPolicy defines the policy to mark the MXJob as succeeded.
+	// Default to "", using the default rules. When either scheduler
+	// or all workers have completed, consider the job is finished.
+	SuccessPolicy *SuccessPolicy `json:"successPolicy,omitempty"`
 
 	// TTLSecondsAfterFinished is the TTL to clean up mxnet-jobs (temporary
 	// before kubernetes adds the cleanup controller).
@@ -98,6 +103,14 @@ const (
 	CleanPodPolicyAll       CleanPodPolicy = "All"
 	CleanPodPolicyRunning   CleanPodPolicy = "Running"
 	CleanPodPolicyNone      CleanPodPolicy = "None"
+)
+
+// SuccessPolicy will determine the success of the job
+type SuccessPolicy string
+
+const (
+	SuccessPolicyDefault    SuccessPolicy = ""
+	SuccessPolicyAllWorkers SuccessPolicy = "AllWorkers"
 )
 
 // RestartPolicy describes how the MXReplicas should be restarted.
