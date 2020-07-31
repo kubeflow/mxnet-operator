@@ -200,6 +200,22 @@ func TestStatus(t *testing.T) {
 			schedulerCompleted:         false,
 			expectedType:               mxv1beta1.MXJobRunning,
 		},
+		{
+			description:                "Scheduler is succeeded, worker is running, successPolicy sets to AllWorkers",
+			mxJob:                      testutil.NewMXJobWithSuccessPolicy(1, 1, 0, mxv1beta1.SuccessPolicyAllWorkers),
+			expectedFailedScheduler:    0,
+			expectedSucceededScheduler: 1,
+			expectedActiveScheduler:    0,
+			expectedFailedWorker:       0,
+			expectedSucceededWorker:    0,
+			expectedActiveWorker:       1,
+			expectedFailedServer:       0,
+			expectedSucceededServer:    0,
+			expectedActiveServer:       0,
+			restart:                    false,
+			schedulerCompleted:         true,
+			expectedType:               mxv1beta1.MXJobRunning,
+		},
 	}
 
 	for i, c := range testCases {

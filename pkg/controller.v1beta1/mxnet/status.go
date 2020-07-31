@@ -63,13 +63,21 @@ func updateStatusSingle(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, r
 					return err
 				}
 			}
-			if expected == 0 {
+			if expected == 0 && *mxjob.Spec.SuccessPolicy != mxv1beta1.SuccessPolicyAllWorkers {
 				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
 				if mxjob.Status.CompletionTime == nil {
 					now := metav1.Now()
 					mxjob.Status.CompletionTime = &now
 				}
 				err := updateMXJobConditions(mxjob, mxv1beta1.MXJobSucceeded, mxJobSucceededReason, msg)
+				if err != nil {
+					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
+					return err
+				}
+			}
+			if expected == 0 && *mxjob.Spec.SuccessPolicy == mxv1beta1.SuccessPolicyAllWorkers {
+				msg := fmt.Sprintf("MXJob %s is running.", mxjob.Name)
+				err := updateMXJobConditions(mxjob, mxv1beta1.MXJobRunning, mxJobRunningReason, msg)
 				if err != nil {
 					mxlogger.LoggerForJob(mxjob).Infof("Append mxjob condition error: %v", err)
 					return err
