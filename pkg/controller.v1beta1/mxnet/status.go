@@ -63,7 +63,7 @@ func updateStatusSingle(mxjob *mxv1beta1.MXJob, rtype mxv1beta1.MXReplicaType, r
 					return err
 				}
 			}
-			if expected == 0 {
+			if expected == 0 && *mxjob.Spec.SuccessPolicy != mxv1beta1.SuccessPolicyAllWorkers {
 				msg := fmt.Sprintf("MXJob %s is successfully completed.", mxjob.Name)
 				if mxjob.Status.CompletionTime == nil {
 					now := metav1.Now()
