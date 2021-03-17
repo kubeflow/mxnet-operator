@@ -3,15 +3,16 @@
 ## Overview
 
 MXNet Operator provides a Kubernetes custom resource `MXJob` that makes it easy to
-run distributed or non-distributed [Apache MXNet](https://github.com/apache/incubator-mxnet) jobs (training and tuning) 
-and other extended framework like [BytePS](https://github.com/bytedance/byteps) jobs on Kubernetes. 
-Using a Custom Resource Definition (CRD) gives users the ability to create 
-and manage Apache MXNet jobs just like built-in K8S resources. 
+run distributed or non-distributed [Apache MXNet](https://github.com/apache/incubator-mxnet) jobs (training and tuning)
+and other extended framework like [BytePS](https://github.com/bytedance/byteps) jobs on Kubernetes.
+Using a Custom Resource Definition (CRD) gives users the ability to create
+and manage Apache MXNet jobs just like built-in K8S resources.
 
 ### Prerequisites
 
 - Kubernetes >= 1.8
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl) >= 1.14
+- [kustomize](https://github.com/kubernetes-sigs/kustomize/releases/tag/v3.2.0) >= 3.2.0
 - Apache MXNet >= v1.2.0
 
 ## Installing the MXJob CRD and operator on your k8s cluster
@@ -19,7 +20,7 @@ and manage Apache MXNet jobs just like built-in K8S resources.
 ### Deploy MXJob CRD and Apache MXNet Operator
 
 ```
-kubectl create -k manifests/overlays/v1beta1/
+kustomize build manifests/overlays/v1beta1 | kubectl apply -f -
 ```
 
 ### Verify that MXJob CRD and Apache MXNet Operator are installed
@@ -101,7 +102,7 @@ should be created for each replica.
 
 ### Creating a TVM tuning job (AutoTVM)
 
-[TVM](https://docs.tvm.ai/tutorials/) is a end to end deep learning compiler stack, you can easily run AutoTVM with mxnet-operator. 
+[TVM](https://docs.tvm.ai/tutorials/) is a end to end deep learning compiler stack, you can easily run AutoTVM with mxnet-operator.
 You can create a auto tuning job by define a type of MXTune job and then creating it with
 
 ```
@@ -112,7 +113,7 @@ Before you use the auto-tuning example, there is some preparatory work need to b
 To let TVM tune your network, you should create a docker image which has TVM module.
 Then, you need a auto-tuning script to specify which network will be tuned and set the auto-tuning parameters.
 For more details, please see [tutorials](https://docs.tvm.ai/tutorials/autotvm/tune_relay_mobile_gpu.html#sphx-glr-tutorials-autotvm-tune-relay-mobile-gpu-py).
-Finally, you need a startup script to start the auto-tuning program. In fact, mxnet-operator will set all the parameters as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning script. 
+Finally, you need a startup script to start the auto-tuning program. In fact, mxnet-operator will set all the parameters as environment variables and the startup script need to reed these variable and then transmit them to auto-tuning script.
 We provide an example under `examples/tune/`, tuning result will be saved in a log file like resnet-18.log in the example we gave. You can refer it for details.
 
 ### Using GPUs
@@ -137,7 +138,7 @@ To get the status of your job
 
 ```bash
 kubectl get -o yaml mxjobs $JOB
-```   
+```
 
 Here is sample output for an example job
 
