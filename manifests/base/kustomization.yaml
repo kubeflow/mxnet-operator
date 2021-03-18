@@ -6,6 +6,13 @@ resources:
 - cluster-role.yaml
 - cluster-role-binding.yaml
 - deployment.yaml
+- user-cluster-roles.yaml
+
+commonLabels:
+  app: mxnet-operator
+  app.kubernetes.io/component: mxnet
+  app.kubernetes.io/name: mxnet-operator
+  kustomize.component: mxnet-operator
 
 images:
 - name: mxjob/mxnet-operator

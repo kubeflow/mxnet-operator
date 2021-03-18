@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: mxnet-operator
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: mxnet-operator
       containers:
