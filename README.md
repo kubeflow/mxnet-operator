@@ -20,7 +20,7 @@ and manage Apache MXNet jobs just like built-in K8S resources.
 ### Deploy MXJob CRD and Apache MXNet Operator
 
 ```
-kustomize build manifests/overlays/v1beta1 | kubectl apply -f -
+kustomize build manifests/overlays/v1 | kubectl apply -f -
 ```
 
 ### Verify that MXJob CRD and Apache MXNet Operator are installed
@@ -58,7 +58,7 @@ mxnet-operator-d466b46bc-xbqvs   1/1     Running   0          4m37s
 You create a training job by defining a `MXJob` with `MXTrain` mode and then creating it with.
 
 ```
-kubectl create -f examples/train/mx_job_dist_gpu_v1beta1.yaml
+kubectl create -f examples/train/mx_job_dist_gpu_v1.yaml
 ```
 
 Each `replicaSpec` defines a set of Apache MXNet processes.
@@ -106,7 +106,7 @@ should be created for each replica.
 You can create a auto tuning job by define a type of MXTune job and then creating it with
 
 ```
-kubectl create -f examples/tune/mx_job_tune_gpu_v1beta1.yaml
+kubectl create -f examples/tune/mx_job_tune_gpu_v1.yaml
 ```
 
 Before you use the auto-tuning example, there is some preparatory work need to be finished in advance.
@@ -143,16 +143,16 @@ kubectl get -o yaml mxjobs $JOB
 Here is sample output for an example job
 
 ```yaml
-apiVersion: kubeflow.org/v1beta1
+apiVersion: kubeflow.org/v1
 kind: MXJob
 metadata:
-  creationTimestamp: 2019-03-19T09:24:27Z
+  creationTimestamp: 2021-03-24T15:37:27Z
   generation: 1
   name: mxnet-job
   namespace: default
-  resourceVersion: "3681685"
-  selfLink: /apis/kubeflow.org/v1beta1/namespaces/default/mxjobs/mxnet-job
-  uid: cb11013b-4a28-11e9-b7f4-704d7bb59f71
+  resourceVersion: "5123435"
+  selfLink: /apis/kubeflow.org/v1/namespaces/default/mxjobs/mxnet-job
+  uid: xx11013b-4a28-11e9-s5a1-704d7bb912f91
 spec:
   cleanPodPolicy: All
   jobMode: MXTrain
@@ -214,22 +214,22 @@ spec:
               limits:
                 nvidia.com/gpu: "1"
 status:
-  completionTime: 2019-03-19T09:25:11Z
+  completionTime: 2021-03-24T09:25:11Z
   conditions:
-  - lastTransitionTime: 2019-03-19T09:24:27Z
-    lastUpdateTime: 2019-03-19T09:24:27Z
+  - lastTransitionTime: 2021-03-24T15:37:27Z
+    lastUpdateTime: 2021-03-24T15:37:27Z
     message: MXJob mxnet-job is created.
     reason: MXJobCreated
     status: "True"
     type: Created
-  - lastTransitionTime: 2019-03-19T09:24:27Z
-    lastUpdateTime: 2019-03-19T09:24:29Z
+  - lastTransitionTime: 2021-03-24T15:37:27Z
+    lastUpdateTime: 2021-03-24T15:37:29Z
     message: MXJob mxnet-job is running.
     reason: MXJobRunning
     status: "False"
     type: Running
-  - lastTransitionTime: 2019-03-19T09:24:27Z
-    lastUpdateTime: 2019-03-19T09:25:11Z
+  - lastTransitionTime: 2021-03-24T15:37:27Z
+    lastUpdateTime: 2021-03-24T09:25:11Z
     message: MXJob mxnet-job is successfully completed.
     reason: MXJobSucceeded
     status: "True"
@@ -238,7 +238,7 @@ status:
     Scheduler: {}
     Server: {}
     Worker: {}
-  startTime: 2019-03-19T09:24:29Z
+  startTime: 2021-03-24T15:37:29Z
 ```
 
 The first thing to note is the **RuntimeId**. This is a random unique
