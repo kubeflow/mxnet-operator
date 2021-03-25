@@ -15,5 +15,5 @@ commonLabels:
   kustomize.component: mxnet-operator
 
 images:
-- name: mxjob/mxnet-operator
-  newTag: v1beta1
+- name: kubeflow/mxnet-operator
+  newTag: v1.1.0
