@@ -127,6 +127,9 @@ func (tc *MXController) SetClusterSpec(job interface{}, podTemplate *corev1.PodT
 			Name:  "DMLC_USE_KUBERNETES",
 			Value: strconv.Itoa(1),
 		})
+
+		// BytePS needs env DMLC_WORKER_ID for each worker
+		addBytePSEnv(c, rtype, index)
 	}
 	return nil
 }
@@ -157,4 +160,13 @@ func getConfigAddr(mxConfigData *MXConfig, rtype commonv1.ReplicaType, index int
 func getConfigReplica(mxConfigData *MXConfig, rtype commonv1.ReplicaType) int {
 	rt := strings.ToLower(string(rtype))
 	return len(mxConfigData.Cluster[rt])
+}
+
+func addBytePSEnv(c *corev1.Container, rtype, index string) {
+	if rtype == strings.ToLower(string(mxv1.MXReplicaTypeWorker)) {
+		c.Env = append(c.Env, corev1.EnvVar{
+			Name:  "DMLC_WORKER_ID",
+			Value: index,
+		})
+	}
 }

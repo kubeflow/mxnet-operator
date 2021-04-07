@@ -16,6 +16,7 @@
 package mxnet
 
 import (
+	"strings"
 	"testing"
 
 	commonv1 "github.com/kubeflow/common/pkg/apis/common/v1"
@@ -78,6 +79,74 @@ func TestRestartPolicy(t *testing.T) {
 		setRestartPolicy(&podTemplate, spec)
 		if podTemplate.Spec.RestartPolicy != c.expectedRestartPolicy {
 			t.Errorf("Expected %s, got %s", c.expectedRestartPolicy, podTemplate.Spec.RestartPolicy)
+		}
+	}
+}
+
+func TestBytPSEnv(t *testing.T) {
+	type tc struct {
+		container *v1.Container
+		rtype commonv1.ReplicaType
+		index string
+		expectedVal string
+	}
+	testCase := []tc{
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeWorker,
+			index: "0",
+			expectedVal: "0",
+		},
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeWorker,
+			index: "1",
+			expectedVal: "1",
+		},
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeScheduler,
+			index: "0",
+			expectedVal: "",
+		},
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeServer,
+			index: "0",
+			expectedVal: "",
+		},
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeTunerTracker,
+			index: "0",
+			expectedVal: "",
+		},
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeTunerServer,
+			index: "0",
+			expectedVal: "",
+		},
+		{
+			container: &v1.Container{},
+			rtype: mxv1.MXReplicaTypeTuner,
+			index: "0",
+			expectedVal: "",
+		},
+	}
+
+	for _, c := range testCase {
+		addBytePSEnv(c.container, strings.ToLower(string(c.rtype)), c.index)
+		var val string
+		for _, env := range c.container.Env {
+			if env.Name == "DMLC_WORKER_ID" {
+				val = env.Value
+				break
+			}
+		}
+
+		if val != c.expectedVal {
+			t.Errorf("Expected %s, got %s", c.expectedVal, val)
 		}
 	}
 }
