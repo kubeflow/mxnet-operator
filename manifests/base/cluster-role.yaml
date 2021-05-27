@@ -9,6 +9,7 @@ rules:
   - kubeflow.org
   resources:
   - mxjobs
+  - mxjobs/status
   verbs:
   - '*'
 - apiGroups:
