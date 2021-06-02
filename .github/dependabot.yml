@@ -1,0 +1,58 @@
+updates:
+- assignees:
+  - suleisl2000
+  - wackxu
+  - terrytangyuan
+  - Jeffwan
+  directory: .
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - gaocegege
+  - jzp1025
+  - KingOnTheStar
+  schedule:
+    interval: daily
+- assignees:
+  - suleisl2000
+  - wackxu
+  - terrytangyuan
+  - Jeffwan
+  directory: examples/tune
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - gaocegege
+  - jzp1025
+  - KingOnTheStar
+  schedule:
+    interval: daily
+- assignees:
+  - suleisl2000
+  - wackxu
+  - terrytangyuan
+  - Jeffwan
+  directory: examples/train
+  open-pull-requests-limit: 10
+  package-ecosystem: docker
+  reviewers:
+  - gaocegege
+  - jzp1025
+  - KingOnTheStar
+  schedule:
+    interval: daily
+- assignees:
+  - suleisl2000
+  - wackxu
+  - terrytangyuan
+  - Jeffwan
+  directory: .
+  open-pull-requests-limit: 10
+  package-ecosystem: gomod
+  reviewers:
+  - gaocegege
+  - jzp1025
+  - KingOnTheStar
+  schedule:
+    interval: daily
+version: 2
