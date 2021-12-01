@@ -1,8 +1,12 @@
 # mxnet-operator: Kubernetes operator for Apache MXNet jobs
 
-## Overview
 
-**Note: This operator has been merged into [Kubeflow Training Operator](https://github.com/kubeflow/training-operator). This repository is not maintained and will be archived soon.**
+   
+## :warning: **kubeflow/mxnet-operator is not maintained**
+
+This operator has been merged into [Kubeflow Training Operator](https://github.com/kubeflow/training-operator). This repository is not maintained and has been archived.
+
+## Overview
 
 MXNet Operator provides a Kubernetes custom resource `MXJob` that makes it easy to
 run distributed or non-distributed [Apache MXNet (incubating)](https://github.com/apache/incubator-mxnet) jobs (training and tuning)
